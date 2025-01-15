@@ -5,6 +5,8 @@
 // @match        https://m.fmkorea.com/*
 // @match        https://www.fmkorea.com/*
 // @grant        none
+// @updateURL   https://raw.githubusercontent.com/chanha0406/InjectScripts/refs/heads/master/Prevent_login.js
+// @downloadURL https://raw.githubusercontent.com/chanha0406/InjectScripts/refs/heads/master/Prevent_login.js
 // ==/UserScript==
 
 (function () {
