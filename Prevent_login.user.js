@@ -50,17 +50,27 @@
                                 // 기본 동작 방지 (새 탭에서 열리는 것을 방지)
                                 event.preventDefault();
 
-                                // 비디오 URL이 있을 경우 다운로드 진행
-                                const link = document.createElement('a');
-                                link.href = videoUrl;
-                                link.download = videoUrl.split('/').pop(); // 파일명은 URL의 마지막 부분을 사용
-                                document.body.appendChild(link); // 링크를 body에 추가해야 정상적으로 동작
-                                link.click();
-                                document.body.removeChild(link); // 다운로드 후 링크 제거
+                                // 비디오 URL을 Blob으로 처리하여 다운로드 트리거
+                                fetch(videoUrl)
+                                    .then(response => response.blob())  // 비디오 URL로부터 Blob 객체 생성
+                                    .then(blob => {
+                                        const link = document.createElement('a');
+                                        const url = URL.createObjectURL(blob);  // Blob URL 생성
+                                        link.href = url;
+                                        link.download = videoUrl.split('/').pop(); // 파일명은 URL의 마지막 부분을 사용
+                                        document.body.appendChild(link); // 링크를 body에 추가해야 정상적으로 동작
+                                        link.click();  // 다운로드 시작
+                                        document.body.removeChild(link); // 다운로드 후 링크 제거
+                                        URL.revokeObjectURL(url);  // Blob URL 해제
+                                    })
+                                    .catch(error => {
+                                        console.error('Download failed:', error);
+                                    });
                             });
                         }
                     }
                 });
+
                 // 댓글 요소에서 링크를 처리
                 document.querySelectorAll('[id^="comment"]').forEach((commentElement) => {
                     // 이미지 링크 처리
