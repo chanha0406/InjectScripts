@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Prevent login script
-// @version      2025-01-16
+// @version      2025-01-16.2
 // @description  Remove login and logo + etc
 // @match        https://m.fmkorea.com/*
 // @match        https://www.fmkorea.com/*
