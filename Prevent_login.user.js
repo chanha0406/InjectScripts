@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Prevent login script
-// @version      1.0
+// @version      1.1
 // @description  Remove login and logo + etc
 // @match        https://m.fmkorea.com/*
 // @match        https://www.fmkorea.com/*
@@ -14,6 +14,8 @@
 
     const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
+            window.is_logged_variable='true'
+
             if (mutation.type === 'childList' || mutation.type === 'subtree') {
                 // 댓글 요소에서 링크를 처리
                 document.querySelectorAll('[id^="comment"]').forEach((commentElement) => {
