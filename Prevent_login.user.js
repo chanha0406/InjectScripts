@@ -17,6 +17,50 @@
             window.is_logged_variable='true'
 
             if (mutation.type === 'childList' || mutation.type === 'subtree') {
+
+                //본문 비디오 다운로드 링크 연결
+                // 모든 mejs__inner 요소 찾기
+                const videoContainers = document.querySelectorAll('.mejs__inner');
+
+                videoContainers.forEach(container => {
+                    // 각 비디오 요소 찾기
+                    const videoElement = container.querySelector('video');
+                    // 비디오 URL 추출
+                    const videoUrl = videoElement ? videoElement.getAttribute('src') : null;
+
+                    // 다운로드 버튼 찾기
+                    const downloadButton = container.querySelector('.mejs__button.mejs__download-file');
+
+                    // 버튼에 'downloading' 클래스가 없다면 처리
+                    if (downloadButton && !downloadButton.classList.contains('downloading')) {
+                        // 다운로드 버튼에 'downloading' 클래스 추가
+                        downloadButton.classList.add('downloading');
+
+                        // 애니메이션을 비활성화하기 위해 스타일 직접 적용
+                        downloadButton.style.animation = 'none'; // 애니메이션 중지
+                        downloadButton.style.transition = 'none'; // 트랜지션 중지 (필요한 경우)
+
+                        // 기존 이벤트 제거 (다운로드 버튼 클릭 이벤트 초기화)
+                        const cloneButton = downloadButton.cloneNode(true); // 버튼 복제
+                        downloadButton.parentNode.replaceChild(cloneButton, downloadButton); // 기존 버튼을 복제한 버튼으로 교체
+
+                        // 다운로드 버튼 클릭 이벤트 리스너 추가
+                        if (cloneButton && videoUrl) {
+                            cloneButton.addEventListener('click', function(event) {
+                                // 기본 동작 방지 (새 탭에서 열리는 것을 방지)
+                                event.preventDefault();
+
+                                // 비디오 URL이 있을 경우 다운로드 진행
+                                const link = document.createElement('a');
+                                link.href = videoUrl;
+                                link.download = videoUrl.split('/').pop(); // 파일명은 URL의 마지막 부분을 사용
+                                document.body.appendChild(link); // 링크를 body에 추가해야 정상적으로 동작
+                                link.click();
+                                document.body.removeChild(link); // 다운로드 후 링크 제거
+                            });
+                        }
+                    }
+                });
                 // 댓글 요소에서 링크를 처리
                 document.querySelectorAll('[id^="comment"]').forEach((commentElement) => {
                     // 이미지 링크 처리
