@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Add playsinline, Auto Play/Pause, Toggle Controls, and Popup Menu with Blob Download
 // @namespace    http://tampermonkey.net/
-// @version      4.2
+// @version      4.3
 // @description  Add playsinline to all videos, control play/pause based on visibility, toggle controls, and show a popup menu synchronized with the video controller and improved Blob Download.
 // @match        *://*/*
 // @grant        GM_setClipboard
@@ -77,10 +77,15 @@
             copyButton.textContent = 'Copy URL';
             copyButton.style.marginRight = '10px';
             copyButton.style.cursor = 'pointer';
-            copyButton.onclick = () => {
+            copyButton.onclick = async () => {
                 const videoURL = video.currentSrc || video.src;
-                GM_setClipboard(videoURL);
-                alert('Video URL copied to clipboard: ' + videoURL);
+                try {
+                    await navigator.clipboard.writeText(videoURL);
+                    alert('Video URL copied to clipboard: ' + videoURL);
+                } catch (error) {
+                    console.error('Failed to copy URL:', error);
+                    alert('Failed to copy URL. Please try again.');
+                }
             };
 
             const openButton = document.createElement('button');
