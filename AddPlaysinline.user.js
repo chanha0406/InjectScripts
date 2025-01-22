@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Add playsinline, Auto Play/Pause, Toggle Controls, and Popup Menu with Blob Download
 // @namespace    http://tampermonkey.net/
-// @version      4.4
+// @version      4.5
 // @description  Add playsinline to all videos, control play/pause based on visibility, toggle controls, and show a popup menu synchronized with the video controller and improved Blob Download.
 // @match        *://*/*
 // @grant        GM_setClipboard
@@ -214,9 +214,9 @@
     const processVideos = () => {
         document.querySelectorAll('video').forEach((video) => {
             if (!video.getAttribute('data-popup-id')) {
-                addPlaysInline(video);
                 synchronizePopupWithControls(video);
                 if (!video.closest('.jwplayer')){
+                    addPlaysInline(video);
                     setupVisibilityObserver(video);
                 }
             }
