@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Add playsinline, Auto Play/Pause, Toggle Controls, and Popup Menu with Blob Download
 // @namespace    http://tampermonkey.net/
-// @version      2.7
+// @version      2.8
 // @description  Add playsinline to all videos, control play/pause based on visibility, toggle controls, and show a popup menu synchronized with the video controller with improved Blob Download.
 // @match        *://*/*
 // @grant        GM_setClipboard
@@ -11,8 +11,6 @@
 
 (function () {
     'use strict';
-
-    const processedVideos = new WeakSet(); // Track already processed videos
 
     // Function to add playsinline attribute to all video elements
     const addPlaysInline = (video) => {
@@ -165,11 +163,10 @@
     // Function to process and observe videos
     const processVideos = () => {
         document.querySelectorAll('video').forEach((video) => {
-            if (!processedVideos.has(video)) {
+            if (!video.getAttribute('data-popup-id')) {
                 addPlaysInline(video); // Add playsinline attribute
                 setupControlToggle(video); // Add click-to-toggle controls
                 synchronizePopupWithControls(video); // Sync popup with controls
-                processedVideos.add(video); // Mark video as processed
             }
         });
     };
