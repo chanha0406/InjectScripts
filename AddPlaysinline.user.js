@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Add playsinline, Auto Play/Pause, Toggle Controls, and Long Press Options with Blob Download
+// @name         Add playsinline, Auto Play/Pause, Toggle Controls, and Popup Menu with Blob Download
 // @namespace    http://tampermonkey.net/
-// @version      1.9
-// @description  Add playsinline to all videos, control play/pause based on visibility, toggle controls, and show a menu to copy, open, or blob-download video URL on long press.
+// @version      2.2
+// @description  Add playsinline to all videos, control play/pause based on visibility, toggle controls, and show a popup menu synchronized with the video controller with improved Blob Download.
 // @match        *://*/*
 // @grant        GM_setClipboard
 // @updateURL    https://raw.githubusercontent.com/chanha0406/InjectScripts/master/AddPlaysinline.user.js
@@ -21,32 +21,59 @@
         }
     };
 
+    // Function to toggle controls on click
+    const setupControlToggle = (video) => {
+        let controlsVisible = true; // Track controls visibility
+
+        // Show controls when paused
+        video.addEventListener('pause', () => {
+            video.controls = true; // Show controls on pause
+            controlsVisible = true;
+            console.log('Controls shown on pause:', video);
+        });
+
+        // Hide controls when playing
+        video.addEventListener('play', () => {
+            video.controls = false; // Hide controls on play
+            controlsVisible = false;
+            console.log('Controls hidden on play:', video);
+        });
+
+        // Toggle controls on click outside the control bar
+        video.addEventListener('click', (event) => {
+            const videoRect = video.getBoundingClientRect();
+            const controlAreaY = videoRect.bottom - 40; // Assume control bar is at the bottom 40px
+
+            // Check if the click is outside the control area
+            if (event.clientY < controlAreaY) {
+                controlsVisible = !controlsVisible;
+                video.controls = controlsVisible;
+                console.log(controlsVisible ? 'Controls shown' : 'Controls hidden', video);
+            }
+        });
+    };
+
     // Function to parse filename from a URL
     const getFileNameFromURL = (url) => {
         try {
-            return decodeURIComponent(url.split('/').pop().split('?')[0]); // Extract filename from URL
+            return decodeURIComponent(url.split('/').pop().split('?')[0]) || 'video.mp4'; // Extract filename from URL
         } catch (e) {
             return 'video.mp4'; // Default fallback name
         }
     };
 
-    // Function to create a custom menu for video options
-    const createCustomMenu = (video) => {
-        // Remove existing menu if any
-        const existingMenu = document.querySelector('#custom-video-menu');
-        if (existingMenu) existingMenu.remove();
-
-        // Create menu container
-        const menu = document.createElement('div');
-        menu.id = 'custom-video-menu';
-        menu.style.position = 'fixed';
-        menu.style.zIndex = '9999';
-        menu.style.background = 'white';
-        menu.style.border = '1px solid #ccc';
-        menu.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
-        menu.style.padding = '10px';
-        menu.style.borderRadius = '8px';
-        menu.style.display = 'none';
+    // Function to create a custom popup menu
+    const createPopupMenu = (video) => {
+        const popup = document.createElement('div');
+        popup.id = `popup-${video.id || Math.random()}`;
+        popup.style.position = 'absolute';
+        popup.style.zIndex = '9999';
+        popup.style.background = 'white';
+        popup.style.border = '1px solid #ccc';
+        popup.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+        popup.style.padding = '10px';
+        popup.style.borderRadius = '8px';
+        popup.style.display = 'none';
 
         // Add "Copy URL" button
         const copyButton = document.createElement('button');
@@ -57,7 +84,6 @@
             const videoURL = video.currentSrc || video.src;
             GM_setClipboard(videoURL); // Copy to clipboard
             alert('Video URL copied to clipboard: ' + videoURL);
-            menu.style.display = 'none';
         };
 
         // Add "Open" button
@@ -68,114 +94,78 @@
         openButton.onclick = () => {
             const videoURL = video.currentSrc || video.src;
             window.open(videoURL, '_blank'); // Open video in a new tab
-            menu.style.display = 'none';
         };
 
-        // Add "Download via Blob" button
+        // Add "Blob Download" button
         const blobDownloadButton = document.createElement('button');
         blobDownloadButton.textContent = 'Blob Download';
         blobDownloadButton.style.cursor = 'pointer';
-        blobDownloadButton.onclick = async () => {
+        blobDownloadButton.onclick = () => {
             const videoURL = video.currentSrc || video.src;
             const fileName = getFileNameFromURL(videoURL);
-            try {
-                const response = await fetch(videoURL);
-                const blob = await response.blob();
-                const blobURL = URL.createObjectURL(blob);
 
-                const link = document.createElement('a');
-                link.href = blobURL;
-                link.download = fileName; // Use parsed filename
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-
-                // Revoke the object URL to release memory
-                URL.revokeObjectURL(blobURL);
-            } catch (error) {
-                console.error('Failed to download video via Blob:', error);
-            }
-            menu.style.display = 'none';
+            fetch(videoURL)
+                .then(response => response.blob()) // Fetch the video as Blob
+                .then(blob => {
+                    const link = document.createElement('a');
+                    const url = URL.createObjectURL(blob); // Create Blob URL
+                    link.href = url;
+                    link.download = fileName; // Use the extracted filename
+                    document.body.appendChild(link); // Append link to body
+                    link.click(); // Trigger the download
+                    document.body.removeChild(link); // Remove the link element
+                    URL.revokeObjectURL(url); // Revoke Blob URL
+                })
+                .catch(error => {
+                    console.error('Download failed:', error);
+                });
         };
 
-        // Append buttons to menu
-        menu.appendChild(copyButton);
-        menu.appendChild(openButton);
-        menu.appendChild(blobDownloadButton);
+        // Append buttons to the popup
+        popup.appendChild(copyButton);
+        popup.appendChild(openButton);
+        popup.appendChild(blobDownloadButton);
 
-        // Append menu to document
-        document.body.appendChild(menu);
+        // Add popup to the document
+        document.body.appendChild(popup);
 
-        return menu;
+        return popup;
     };
 
-    // Function to handle long press and show the menu
-    const handleLongPress = (video) => {
-        let timer;
-        let menu;
+    // Function to synchronize the popup menu with video controls
+    const synchronizePopupWithControls = (video) => {
+        const popup = createPopupMenu(video);
 
-        // Start long press detection on touchstart or mousedown
-        const startPress = (event) => {
-            timer = setTimeout(() => {
-                event.preventDefault(); // Prevent default context menu
-                if (!menu) {
-                    menu = createCustomMenu(video);
-                }
-                menu.style.left = `${event.pageX}px`;
-                menu.style.top = `${event.pageY}px`;
-                menu.style.display = 'block';
+        // Position and show/hide popup based on controls visibility
+        const updatePopupPosition = () => {
+            const rect = video.getBoundingClientRect();
+            popup.style.left = `${rect.left + window.scrollX}px`;
+            popup.style.top = `${rect.bottom + window.scrollY + 5}px`;
 
-                // Hide menu on click outside
-                const hideMenu = (e) => {
-                    if (!menu.contains(e.target)) {
-                        menu.style.display = 'none';
-                        document.removeEventListener('click', hideMenu);
-                    }
-                };
-                document.addEventListener('click', hideMenu);
-            }, 500); // 500ms for long press
+            // Show popup if controls are visible, hide otherwise
+            popup.style.display = video.controls ? 'block' : 'none';
         };
 
-        // Cancel long press on touchend or mouseup
-        const cancelPress = () => {
-            clearTimeout(timer);
-        };
-
-        video.addEventListener('mousedown', startPress);
-        video.addEventListener('touchstart', startPress);
-        video.addEventListener('mouseup', cancelPress);
-        video.addEventListener('touchend', cancelPress);
-    };
-
-    // Intersection Observer to control play/pause based on visibility
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-            const video = entry.target;
-
-            if (entry.intersectionRatio > 0.3) {
-                // Play video when 30% or more is visible
-                if (video.paused) {
-                    video.play();
-                    console.log('Video playing: ', video);
-                }
-            } else {
-                // Pause video when less than 30% is visible
-                if (!video.paused) {
-                    video.pause();
-                    console.log('Video paused: ', video);
-                }
-            }
+        // Attach events to update popup position and visibility
+        video.addEventListener('mouseenter', () => {
+            video.controls = true; // Show controls on hover
+            updatePopupPosition();
         });
-    }, {
-        threshold: 0.3 // Trigger when 30% of the video is visible
-    });
+
+        video.addEventListener('mouseleave', () => {
+            video.controls = false; // Hide controls on leave
+            popup.style.display = 'none';
+        });
+
+        video.addEventListener('mousemove', updatePopupPosition); // Keep popup in sync
+    };
 
     // Function to observe and process all video elements
     const processVideos = () => {
         document.querySelectorAll('video').forEach((video) => {
             addPlaysInline(video); // Add playsinline attribute
-            handleLongPress(video); // Add long press functionality
-            observer.observe(video); // Observe for play/pause control
+            setupControlToggle(video); // Add click-to-toggle controls
+            synchronizePopupWithControls(video); // Sync popup with controls
         });
     };
 
