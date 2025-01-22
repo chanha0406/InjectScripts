@@ -1,12 +1,12 @@
 // ==UserScript==
 // @name         Add playsinline, Auto Play/Pause, Toggle Controls, and Long Press Options
 // @namespace    http://tampermonkey.net/
-// @version      1.5
+// @version      1.6
 // @description  Add playsinline to all videos, control play/pause based on visibility, toggle controls, and show a menu to copy or download video URL on long press with filename parsing.
 // @match        *://*/*
 // @grant        GM_setClipboard
-// @updateURL https://raw.githubusercontent.com/chanha0406/InjectScripts/master/AddPlaysinline.user.js
-// @downloadURL https://raw.githubusercontent.com/chanha0406/InjectScripts/master/AddPlaysinline.user.js
+// @updateURL    https://raw.githubusercontent.com/chanha0406/InjectScripts/master/AddPlaysinline.user.js
+// @downloadURL  https://raw.githubusercontent.com/chanha0406/InjectScripts/master/AddPlaysinline.user.js
 // ==/UserScript==
 
 (function () {
@@ -21,22 +21,36 @@
         }
     };
 
-    // Function to toggle controls on click
-    const toggleControlsOnClick = (video) => {
-        video.addEventListener('click', (event) => {
-            if (event.target === video) { // Ensure it's the video element
-                video.controls = !video.controls; // Toggle the controls
-                console.log(video.controls ? 'Controls shown' : 'Controls hidden', video);
-            }
-        });
-    };
+    // Function to toggle controls on specific clicks
+    const setupControlToggle = (video) => {
+        // Track whether the controls are currently visible
+        let controlsVisible = true;
 
-    // Function to hide controls when video starts playing
-    const hideControlsOnPlay = (video) => {
+        // Show controls when paused
+        video.addEventListener('pause', () => {
+            video.controls = true; // Show controls on pause
+            controlsVisible = true;
+            console.log('Controls shown on pause:', video);
+        });
+
+        // Hide controls when playing
         video.addEventListener('play', () => {
-            if (!video.controls) return; // Skip if controls are already hidden
             video.controls = false; // Hide controls on play
+            controlsVisible = false;
             console.log('Controls hidden on play:', video);
+        });
+
+        // Toggle controls on click outside the control bar
+        video.addEventListener('click', (event) => {
+            const videoRect = video.getBoundingClientRect();
+            const controlAreaY = videoRect.bottom - 40; // Assume control bar is at the bottom 40px
+
+            // Check if the click is outside the control area
+            if (event.clientY < controlAreaY) {
+                controlsVisible = !controlsVisible;
+                video.controls = controlsVisible;
+                console.log(controlsVisible ? 'Controls shown' : 'Controls hidden', video);
+            }
         });
     };
 
@@ -152,8 +166,7 @@
     const processVideos = () => {
         document.querySelectorAll('video').forEach((video) => {
             addPlaysInline(video); // Add playsinline attribute
-            toggleControlsOnClick(video); // Set up click-based controls toggle
-            hideControlsOnPlay(video); // Hide controls on play
+            setupControlToggle(video); // Set up control toggle on play/pause and clicks
             handleLongPress(video); // Add long press functionality
             observer.observe(video); // Observe for play/pause control
         });
