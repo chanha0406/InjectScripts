@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Add playsinline and Auto Play/Pause Videos
 // @namespace    http://tampermonkey.net/
-// @version      1.1
+// @version      1.2
 // @description  Add playsinline to all videos and control play/pause based on visibility in the viewport.
 // @match        *://*/*
 // @grant        none
@@ -21,27 +21,43 @@
         }
     };
 
+    // Function to hide controls during playback
+    const hideControls = (video) => {
+        video.addEventListener('play', () => {
+            video.controls = false; // Hide controls
+            console.log('Controls hidden for video:', video);
+        });
+
+        video.addEventListener('pause', () => {
+            video.controls = true; // Show controls when paused
+            console.log('Controls shown for video:', video);
+        });
+    };
+
     // Intersection Observer to control play/pause based on visibility
     const observer = new IntersectionObserver((entries) => {
         entries.forEach((entry) => {
             const video = entry.target;
 
-            if (entry.isIntersecting) {
-                video.play(); // Play video when it enters the viewport
+            if (entry.intersectionRatio > 0.3) {
+                // Play video when 30% or more is visible
+                video.play();
                 console.log('Video playing: ', video);
             } else {
-                video.pause(); // Pause video when it leaves the viewport
+                // Pause video when less than 30% is visible
+                video.pause();
                 console.log('Video paused: ', video);
             }
         });
     }, {
-        threshold: 0.1 // Trigger when 10% of the video is visible
+        threshold: 0.3 // Trigger when 30% of the video is visible
     });
 
     // Function to observe and process all video elements
     const processVideos = () => {
         document.querySelectorAll('video').forEach((video) => {
             addPlaysInline(video); // Add playsinline attribute
+            hideControls(video);  // Set up controls hiding
             observer.observe(video); // Observe for play/pause control
         });
     };
