@@ -5,8 +5,8 @@
 // @description  Automatically add playsinline to all video elements
 // @match        *://*/*
 // @grant        none
-// @updateURL https://raw.githubusercontent.com/chanha0406/InjectScripts/refs/heads/master/AddPlaysinline.user.js
-// @downloadURL https://raw.githubusercontent.com/chanha0406/InjectScripts/refs/heads/master/AddPlaysinline.user.js
+// @updateURL https://raw.githubusercontent.com/chanha0406/InjectScripts/master/AddPlaysinline.user.jsheads/master/AddPlaysinline.user.js
+// @downloadURL https://raw.githubusercontent.com/chanha0406/InjectScripts/master/AddPlaysinline.user.js
 // ==/UserScript==
 
 (function() {
