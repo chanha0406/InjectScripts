@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Auto Blob Download for Specific URLs
 // @namespace    http://tampermonkey.net/
-// @version      1.0
+// @version      2.0
 // @description  Automatically download video files with Blob when the URL contains specific extensions and the 'download' query.
 // @match        *://*/*
 // @grant        none
@@ -17,13 +17,17 @@
 
     // Function to automatically download Blob if URL matches criteria
     const checkAndDownloadBlob = () => {
-        const url = window.location.href;
+        const url = new URL(window.location.href); // Use URL object for easier parsing
+        const pathname = url.pathname; // Get the path excluding query
+        const searchParams = url.searchParams; // Get query parameters
 
-        // Check if the URL contains a video extension and 'download' query
-        if (videoExtensions.test(url) && url.includes('download')) {
-            const fileName = url.split('/').pop().split('?')[0]; // Extract file name from URL
+        // Check if the path contains a video extension and 'download' exists in query parameters
+        if (videoExtensions.test(pathname) && searchParams.has('download')) {
+            const fileName = pathname.split('/').pop(); // Extract file name from path
 
-            fetch(url)
+            console.log(fileName);
+
+            fetch(url.href)
                 .then((response) => {
                     if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
                     return response.blob();
@@ -47,4 +51,5 @@
 
     // Execute the function on script load
     checkAndDownloadBlob();
+
 })();

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Add playsinline, Auto Play/Pause, Toggle Controls, and Popup Menu with Blob Download
 // @namespace    http://tampermonkey.net/
-// @version      3.4
+// @version      4.0
 // @description  Add playsinline to all videos, control play/pause based on visibility, toggle controls, and show a popup menu synchronized with the video controller and improved Blob Download.
 // @match        *://*/*
 // @grant        GM_setClipboard
@@ -95,20 +95,21 @@
             const blobDownloadButton = document.createElement('button');
             blobDownloadButton.textContent = 'Blob Download';
             blobDownloadButton.style.cursor = 'pointer';
+            
             blobDownloadButton.onclick = async () => {
-                const videoURL = video.currentSrc || video.src;
-                const fileName = getFileNameFromURL(videoURL);
-
+                const videoURL = video.currentSrc || video.src; // Get video source
+                const fileName = getFileNameFromURL(videoURL); // Function to get file name from URL
+            
                 try {
                     const response = await fetch(videoURL, { mode: 'cors' });
-
+            
                     if (!response.ok) {
                         throw new Error(`HTTP error! Status: ${response.status}`);
                     }
-
+            
                     const blob = await response.blob();
                     const url = URL.createObjectURL(blob);
-
+            
                     const link = document.createElement('a');
                     link.href = url;
                     link.download = fileName;
@@ -119,8 +120,16 @@
                 } catch (error) {
                     console.error('Blob Download failed:', error);
                     alert(`Failed to download video: ${error.message}`);
+            
+                    // Add 'download' query to the URL
+                    const downloadURL = new URL(videoURL);
+                    downloadURL.searchParams.set('download', 'true');
+            
+                    // Open the modified URL in a new tab
+                    window.open(downloadURL.href, '_blank');
                 }
             };
+            
 
             popup.appendChild(copyButton);
             popup.appendChild(openButton);
