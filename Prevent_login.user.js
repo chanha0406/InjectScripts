@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Prevent login script
-// @version      2025-01-16.2
+// @version      2025-01-22
 // @description  Remove login and logo + etc
 // @match        https://m.fmkorea.com/*
 // @match        https://www.fmkorea.com/*
@@ -76,7 +76,7 @@
                     // 이미지 링크 처리
                     const imageLinks = commentElement.querySelectorAll('a[href*=".jpg"]:not(:has(img)), \
                                                                          a[href*=".png"]:not(:has(img)), \
-                                                                         a[href$=".gif"]:not(:has(img)), \
+                                                                         a[href*=".gif"]:not(:has(img)), \
                                                                          a[href*=".jpeg"]:not(:has(img)), \
                                                                          a[href*=".webp"]:not(:has(img)), \
                                                                          a[href*="format=jpg"]:not(:has(img)), \
@@ -99,8 +99,8 @@
                     });
 
                     // 비디오 링크 처리
-                    const videoLinks = commentElement.querySelectorAll('a[href$=".mp4"]:not(:has(video)), \
-                                                                         a[href$=".mov"]:not(:has(video))');
+                    const videoLinks = commentElement.querySelectorAll('a[href*=".mp4"]:not(:has(video)), \
+                                                                         a[href*=".mov"]:not(:has(video))');
 
                     videoLinks.forEach((link) => {
                         const videoUrl = link.href;
