@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Add playsinline, Auto Play/Pause, Toggle Controls, and Popup Menu with Blob Download
 // @namespace    http://tampermonkey.net/
-// @version      3.1
+// @version      3.2
 // @description  Add playsinline to all videos, control play/pause based on visibility, toggle controls, and show a popup menu synchronized with the video controller and improved Blob Download.
 // @match        *://*/*
 // @grant        GM_setClipboard
@@ -25,13 +25,13 @@
         video.addEventListener('pause', () => {
             video.controls = true;
             controlsVisible = true;
-            updatePopupPosition(); // Sync popup position on pause
+            updatePopupPosition();
         });
 
         video.addEventListener('play', () => {
             video.controls = false;
             controlsVisible = false;
-            updatePopupPosition(); // Sync popup position on play
+            updatePopupPosition();
         });
 
         video.addEventListener('click', (event) => {
@@ -41,7 +41,7 @@
             if (event.clientY < controlAreaY) {
                 controlsVisible = !controlsVisible;
                 video.controls = controlsVisible;
-                updatePopupPosition(); // Sync popup position on click toggle
+                updatePopupPosition();
             }
         });
     };
@@ -143,7 +143,6 @@
             popup.style.display = video.controls ? 'block' : 'none';
         };
 
-        // Attach popup position update to video control toggle events
         setupControlToggle(video, updatePopupPosition);
     };
 
@@ -152,6 +151,10 @@
             (entries) => {
                 entries.forEach((entry) => {
                     if (entry.isIntersecting && entry.intersectionRatio > 0.3) {
+                        if (!video.hasAttribute('data-initial-played') && !video.paused) {
+                            video.pause();
+                            return;
+                        }
                         // Play video when at least 30% visible
                         if (video.paused) {
                             video.play();
@@ -164,7 +167,7 @@
                     }
                 });
             },
-            { threshold: [0.3] } // Trigger at 30% visibility
+            { threshold: [0.3] }
         );
 
         observer.observe(video);
