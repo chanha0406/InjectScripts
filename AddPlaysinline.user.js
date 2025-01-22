@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Add playsinline, Auto Play/Pause, Toggle Controls, and Popup Menu with Blob Download
 // @namespace    http://tampermonkey.net/
-// @version      2.5
+// @version      2.7
 // @description  Add playsinline to all videos, control play/pause based on visibility, toggle controls, and show a popup menu synchronized with the video controller with improved Blob Download.
 // @match        *://*/*
 // @grant        GM_setClipboard
@@ -11,6 +11,8 @@
 
 (function () {
     'use strict';
+
+    const processedVideos = new WeakSet(); // Track already processed videos
 
     // Function to add playsinline attribute to all video elements
     const addPlaysInline = (video) => {
@@ -64,10 +66,13 @@
 
     // Function to create a custom popup menu for a video
     const createPopupMenu = (video) => {
-        const popupId = `popup-${video.id || Math.random()}`; // Unique popup ID for each video
-        let popup = document.querySelector(`#${popupId}`);
+        let popupId = video.getAttribute('data-popup-id'); // Check if popup ID already exists
+        let popup;
 
-        if (!popup) {
+        if (!popupId) {
+            popupId = `popup-${Math.random().toString(36).substr(2, 9)}`; // Generate unique ID
+            video.setAttribute('data-popup-id', popupId); // Attach popup ID to video as an attribute
+
             popup = document.createElement('div');
             popup.id = popupId;
             popup.style.position = 'absolute';
@@ -132,6 +137,8 @@
 
             // Add popup to the document
             document.body.appendChild(popup);
+        } else {
+            popup = document.querySelector(`#${popupId}`);
         }
 
         return popup;
@@ -150,15 +157,20 @@
             // Show popup if controls are visible, hide otherwise
             popup.style.display = video.controls ? 'block' : 'none';
         };
+
+        // Attach events to update popup position and visibility
+        video.addEventListener('click', updatePopupPosition);
     };
 
     // Function to process and observe videos
     const processVideos = () => {
-        document.querySelectorAll('video:not([data-processed])').forEach((video) => {
-            addPlaysInline(video); // Add playsinline attribute
-            setupControlToggle(video); // Add click-to-toggle controls
-            synchronizePopupWithControls(video); // Sync popup with controls
-            video.setAttribute('data-processed', 'true'); // Mark video as processed
+        document.querySelectorAll('video').forEach((video) => {
+            if (!processedVideos.has(video)) {
+                addPlaysInline(video); // Add playsinline attribute
+                setupControlToggle(video); // Add click-to-toggle controls
+                synchronizePopupWithControls(video); // Sync popup with controls
+                processedVideos.add(video); // Mark video as processed
+            }
         });
     };
 
