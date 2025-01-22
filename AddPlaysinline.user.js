@@ -92,13 +92,9 @@
                 window.open(videoURL, '_blank');
             };
 
-            const blobDownloadButton = document.createElement('button');
-            blobDownloadButton.textContent = 'Blob Download';
-            blobDownloadButton.style.cursor = 'pointer';
-            
             blobDownloadButton.onclick = async () => {
-                const videoURL = video.currentSrc || video.src; // Get video source
-                const fileName = getFileNameFromURL(videoURL); // Function to get file name from URL
+                const videoURL = video.currentSrc || video.src;
+                const fileName = getFileNameFromURL(videoURL);
             
                 try {
                     const response = await fetch(videoURL, { mode: 'cors' });
@@ -119,17 +115,21 @@
                     URL.revokeObjectURL(url);
                 } catch (error) {
                     console.error('Blob Download failed:', error);
-                    alert(`Failed to download video: ${error.message}`);
             
                     // Add 'download' query to the URL
                     const downloadURL = new URL(videoURL);
                     downloadURL.searchParams.set('download', 'true');
             
-                    // Open the modified URL in a new tab
-                    window.open(downloadURL.href, '_blank');
+                    // Attempt to open in new tab
+                    const newTab = window.open(downloadURL.href, '_blank');
+                    if (!newTab || newTab.closed || typeof newTab.closed === 'undefined') {
+                        // Fallback: Notify user
+                        console.error('Popup blocked. Redirecting to URL...');
+                        alert('팝업이 차단되었습니다. 다운로드를 현재 창에서 진행합니다.');
+                        window.location.href = downloadURL.href;
+                    }
                 }
-            };
-            
+            };            
 
             popup.appendChild(copyButton);
             popup.appendChild(openButton);
