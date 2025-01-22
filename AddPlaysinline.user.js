@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Add playsinline, Auto Play/Pause, Toggle Controls, and Popup Menu with Blob Download
 // @namespace    http://tampermonkey.net/
-// @version      3.3
+// @version      3.4
 // @description  Add playsinline to all videos, control play/pause based on visibility, toggle controls, and show a popup menu synchronized with the video controller and improved Blob Download.
 // @match        *://*/*
 // @grant        GM_setClipboard
@@ -145,7 +145,54 @@
 
         setupControlToggle(video, updatePopupPosition);
     };
-
+    
+    const setupVisibilityObserver = (video) => {
+        // Remove autoplay to prevent automatic playback on load
+        if (video.hasAttribute('autoplay')) {
+            video.removeAttribute('autoplay');
+        }
+    
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting && entry.intersectionRatio > 0.3) {
+                        // Play video when at least 30% visible
+                        if (video.paused) {
+                            video.play();
+                        }
+                    } else {
+                        // Pause video when less than 30% visible
+                        if (!video.paused) {
+                            video.pause();
+                        }
+                    }
+                });
+            },
+            { threshold: [0.3] } // Trigger at 30% visibility
+        );
+    
+        // Observe video visibility
+        observer.observe(video);
+    
+        // Ensure the video stays paused if it's not visible on load
+        const onVideoLoad = () => {
+            const rect = video.getBoundingClientRect();
+            const isVisible =
+                rect.top < window.innerHeight &&
+                rect.bottom > 0 &&
+                rect.left < window.innerWidth &&
+                rect.right > 0;
+    
+            if (!isVisible && !video.paused) {
+                video.pause();
+            }
+        };
+    
+        // Handle events to ensure the video is paused if not visible
+        video.addEventListener('loadeddata', onVideoLoad);
+        video.addEventListener('canplay', onVideoLoad);
+    };
+    
     const processVideos = () => {
         document.querySelectorAll('video').forEach((video) => {
             if (!video.getAttribute('data-popup-id')) {
