@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Add playsinline, Auto Play/Pause, Toggle Controls, and Long Press Options
+// @name         Add playsinline, Auto Play/Pause, Toggle Controls, and Long Press Options with Blob Download
 // @namespace    http://tampermonkey.net/
-// @version      1.7
-// @description  Add playsinline to all videos, control play/pause based on visibility, toggle controls, and show a menu to copy or download video URL on long press with filename parsing.
+// @version      1.9
+// @description  Add playsinline to all videos, control play/pause based on visibility, toggle controls, and show a menu to copy, open, or blob-download video URL on long press.
 // @match        *://*/*
 // @grant        GM_setClipboard
 // @updateURL    https://raw.githubusercontent.com/chanha0406/InjectScripts/master/AddPlaysinline.user.js
@@ -60,25 +60,48 @@
             menu.style.display = 'none';
         };
 
-        // Add "Download" button
-        const downloadButton = document.createElement('button');
-        downloadButton.textContent = 'Download';
-        downloadButton.style.cursor = 'pointer';
-        downloadButton.onclick = () => {
+        // Add "Open" button
+        const openButton = document.createElement('button');
+        openButton.textContent = 'Open';
+        openButton.style.marginRight = '10px';
+        openButton.style.cursor = 'pointer';
+        openButton.onclick = () => {
+            const videoURL = video.currentSrc || video.src;
+            window.open(videoURL, '_blank'); // Open video in a new tab
+            menu.style.display = 'none';
+        };
+
+        // Add "Download via Blob" button
+        const blobDownloadButton = document.createElement('button');
+        blobDownloadButton.textContent = 'Blob Download';
+        blobDownloadButton.style.cursor = 'pointer';
+        blobDownloadButton.onclick = async () => {
             const videoURL = video.currentSrc || video.src;
             const fileName = getFileNameFromURL(videoURL);
-            const link = document.createElement('a');
-            link.href = videoURL;
-            link.download = fileName; // Use parsed filename
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            try {
+                const response = await fetch(videoURL);
+                const blob = await response.blob();
+                const blobURL = URL.createObjectURL(blob);
+
+                const link = document.createElement('a');
+                link.href = blobURL;
+                link.download = fileName; // Use parsed filename
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                // Revoke the object URL to release memory
+                URL.revokeObjectURL(blobURL);
+            } catch (error) {
+                console.error('Failed to download video via Blob:', error);
+            }
             menu.style.display = 'none';
         };
 
         // Append buttons to menu
         menu.appendChild(copyButton);
-        menu.appendChild(downloadButton);
+        menu.appendChild(openButton);
+        menu.appendChild(blobDownloadButton);
 
         // Append menu to document
         document.body.appendChild(menu);
