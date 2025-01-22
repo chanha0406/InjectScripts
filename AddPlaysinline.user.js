@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Add playsinline, Auto Play/Pause, Toggle Controls, and Long Press Options
 // @namespace    http://tampermonkey.net/
-// @version      1.4
+// @version      1.5
 // @description  Add playsinline to all videos, control play/pause based on visibility, toggle controls, and show a menu to copy or download video URL on long press with filename parsing.
 // @match        *://*/*
 // @grant        GM_setClipboard
@@ -34,6 +34,7 @@
     // Function to hide controls when video starts playing
     const hideControlsOnPlay = (video) => {
         video.addEventListener('play', () => {
+            if (!video.controls) return; // Skip if controls are already hidden
             video.controls = false; // Hide controls on play
             console.log('Controls hidden on play:', video);
         });
