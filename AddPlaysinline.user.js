@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Add playsinline, Auto Play/Pause, Toggle Controls, and Long Press Options
 // @namespace    http://tampermonkey.net/
-// @version      1.6
+// @version      1.7
 // @description  Add playsinline to all videos, control play/pause based on visibility, toggle controls, and show a menu to copy or download video URL on long press with filename parsing.
 // @match        *://*/*
 // @grant        GM_setClipboard
@@ -19,39 +19,6 @@
             video.setAttribute('webkit-playsinline', 'true'); // For older iOS compatibility
             console.log('Added playsinline to video:', video);
         }
-    };
-
-    // Function to toggle controls on specific clicks
-    const setupControlToggle = (video) => {
-        // Track whether the controls are currently visible
-        let controlsVisible = true;
-
-        // Show controls when paused
-        video.addEventListener('pause', () => {
-            video.controls = true; // Show controls on pause
-            controlsVisible = true;
-            console.log('Controls shown on pause:', video);
-        });
-
-        // Hide controls when playing
-        video.addEventListener('play', () => {
-            video.controls = false; // Hide controls on play
-            controlsVisible = false;
-            console.log('Controls hidden on play:', video);
-        });
-
-        // Toggle controls on click outside the control bar
-        video.addEventListener('click', (event) => {
-            const videoRect = video.getBoundingClientRect();
-            const controlAreaY = videoRect.bottom - 40; // Assume control bar is at the bottom 40px
-
-            // Check if the click is outside the control area
-            if (event.clientY < controlAreaY) {
-                controlsVisible = !controlsVisible;
-                video.controls = controlsVisible;
-                console.log(controlsVisible ? 'Controls shown' : 'Controls hidden', video);
-            }
-        });
     };
 
     // Function to parse filename from a URL
@@ -121,22 +88,40 @@
 
     // Function to handle long press and show the menu
     const handleLongPress = (video) => {
-        video.addEventListener('contextmenu', (event) => {
-            event.preventDefault(); // Prevent default context menu
-            const menu = createCustomMenu(video);
-            menu.style.left = `${event.pageX}px`;
-            menu.style.top = `${event.pageY}px`;
-            menu.style.display = 'block';
+        let timer;
+        let menu;
 
-            // Hide menu on click outside
-            const hideMenu = (e) => {
-                if (!menu.contains(e.target)) {
-                    menu.style.display = 'none';
-                    document.removeEventListener('click', hideMenu);
+        // Start long press detection on touchstart or mousedown
+        const startPress = (event) => {
+            timer = setTimeout(() => {
+                event.preventDefault(); // Prevent default context menu
+                if (!menu) {
+                    menu = createCustomMenu(video);
                 }
-            };
-            document.addEventListener('click', hideMenu);
-        });
+                menu.style.left = `${event.pageX}px`;
+                menu.style.top = `${event.pageY}px`;
+                menu.style.display = 'block';
+
+                // Hide menu on click outside
+                const hideMenu = (e) => {
+                    if (!menu.contains(e.target)) {
+                        menu.style.display = 'none';
+                        document.removeEventListener('click', hideMenu);
+                    }
+                };
+                document.addEventListener('click', hideMenu);
+            }, 500); // 500ms for long press
+        };
+
+        // Cancel long press on touchend or mouseup
+        const cancelPress = () => {
+            clearTimeout(timer);
+        };
+
+        video.addEventListener('mousedown', startPress);
+        video.addEventListener('touchstart', startPress);
+        video.addEventListener('mouseup', cancelPress);
+        video.addEventListener('touchend', cancelPress);
     };
 
     // Intersection Observer to control play/pause based on visibility
@@ -166,7 +151,6 @@
     const processVideos = () => {
         document.querySelectorAll('video').forEach((video) => {
             addPlaysInline(video); // Add playsinline attribute
-            setupControlToggle(video); // Set up control toggle on play/pause and clicks
             handleLongPress(video); // Add long press functionality
             observer.observe(video); // Observe for play/pause control
         });
