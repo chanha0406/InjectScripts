@@ -216,7 +216,9 @@
             if (!video.getAttribute('data-popup-id')) {
                 addPlaysInline(video);
                 synchronizePopupWithControls(video);
-                setupVisibilityObserver(video);
+                if (!video.closest('.jwplayer')){
+                    setupVisibilityObserver(video);
+                }
             }
         });
     };
