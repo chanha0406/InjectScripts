@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Add playsinline, Auto Play/Pause, Toggle Controls, and Popup Menu with Blob Download
 // @namespace    http://tampermonkey.net/
-// @version      2.2
+// @version      2.5
 // @description  Add playsinline to all videos, control play/pause based on visibility, toggle controls, and show a popup menu synchronized with the video controller with improved Blob Download.
 // @match        *://*/*
 // @grant        GM_setClipboard
@@ -62,72 +62,77 @@
         }
     };
 
-    // Function to create a custom popup menu
+    // Function to create a custom popup menu for a video
     const createPopupMenu = (video) => {
-        const popup = document.createElement('div');
-        popup.id = `popup-${video.id || Math.random()}`;
-        popup.style.position = 'absolute';
-        popup.style.zIndex = '9999';
-        popup.style.background = 'white';
-        popup.style.border = '1px solid #ccc';
-        popup.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
-        popup.style.padding = '10px';
-        popup.style.borderRadius = '8px';
-        popup.style.display = 'none';
+        const popupId = `popup-${video.id || Math.random()}`; // Unique popup ID for each video
+        let popup = document.querySelector(`#${popupId}`);
 
-        // Add "Copy URL" button
-        const copyButton = document.createElement('button');
-        copyButton.textContent = 'Copy URL';
-        copyButton.style.marginRight = '10px';
-        copyButton.style.cursor = 'pointer';
-        copyButton.onclick = () => {
-            const videoURL = video.currentSrc || video.src;
-            GM_setClipboard(videoURL); // Copy to clipboard
-            alert('Video URL copied to clipboard: ' + videoURL);
-        };
+        if (!popup) {
+            popup = document.createElement('div');
+            popup.id = popupId;
+            popup.style.position = 'absolute';
+            popup.style.zIndex = '9999';
+            popup.style.background = 'white';
+            popup.style.border = '1px solid #ccc';
+            popup.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+            popup.style.padding = '10px';
+            popup.style.borderRadius = '8px';
+            popup.style.display = 'none';
 
-        // Add "Open" button
-        const openButton = document.createElement('button');
-        openButton.textContent = 'Open';
-        openButton.style.marginRight = '10px';
-        openButton.style.cursor = 'pointer';
-        openButton.onclick = () => {
-            const videoURL = video.currentSrc || video.src;
-            window.open(videoURL, '_blank'); // Open video in a new tab
-        };
+            // Add "Copy URL" button
+            const copyButton = document.createElement('button');
+            copyButton.textContent = 'Copy URL';
+            copyButton.style.marginRight = '10px';
+            copyButton.style.cursor = 'pointer';
+            copyButton.onclick = () => {
+                const videoURL = video.currentSrc || video.src;
+                GM_setClipboard(videoURL); // Copy to clipboard
+                alert('Video URL copied to clipboard: ' + videoURL);
+            };
 
-        // Add "Blob Download" button
-        const blobDownloadButton = document.createElement('button');
-        blobDownloadButton.textContent = 'Blob Download';
-        blobDownloadButton.style.cursor = 'pointer';
-        blobDownloadButton.onclick = () => {
-            const videoURL = video.currentSrc || video.src;
-            const fileName = getFileNameFromURL(videoURL);
+            // Add "Open" button
+            const openButton = document.createElement('button');
+            openButton.textContent = 'Open';
+            openButton.style.marginRight = '10px';
+            openButton.style.cursor = 'pointer';
+            openButton.onclick = () => {
+                const videoURL = video.currentSrc || video.src;
+                window.open(videoURL, '_blank'); // Open video in a new tab
+            };
 
-            fetch(videoURL)
-                .then(response => response.blob()) // Fetch the video as Blob
-                .then(blob => {
-                    const link = document.createElement('a');
-                    const url = URL.createObjectURL(blob); // Create Blob URL
-                    link.href = url;
-                    link.download = fileName; // Use the extracted filename
-                    document.body.appendChild(link); // Append link to body
-                    link.click(); // Trigger the download
-                    document.body.removeChild(link); // Remove the link element
-                    URL.revokeObjectURL(url); // Revoke Blob URL
-                })
-                .catch(error => {
-                    console.error('Download failed:', error);
-                });
-        };
+            // Add "Blob Download" button
+            const blobDownloadButton = document.createElement('button');
+            blobDownloadButton.textContent = 'Blob Download';
+            blobDownloadButton.style.cursor = 'pointer';
+            blobDownloadButton.onclick = () => {
+                const videoURL = video.currentSrc || video.src;
+                const fileName = getFileNameFromURL(videoURL);
 
-        // Append buttons to the popup
-        popup.appendChild(copyButton);
-        popup.appendChild(openButton);
-        popup.appendChild(blobDownloadButton);
+                fetch(videoURL)
+                    .then(response => response.blob()) // Fetch the video as Blob
+                    .then(blob => {
+                        const link = document.createElement('a');
+                        const url = URL.createObjectURL(blob); // Create Blob URL
+                        link.href = url;
+                        link.download = fileName; // Use the extracted filename
+                        document.body.appendChild(link); // Append link to body
+                        link.click(); // Trigger the download
+                        document.body.removeChild(link); // Remove the link element
+                        URL.revokeObjectURL(url); // Revoke Blob URL
+                    })
+                    .catch(error => {
+                        console.error('Download failed:', error);
+                    });
+            };
 
-        // Add popup to the document
-        document.body.appendChild(popup);
+            // Append buttons to the popup
+            popup.appendChild(copyButton);
+            popup.appendChild(openButton);
+            popup.appendChild(blobDownloadButton);
+
+            // Add popup to the document
+            document.body.appendChild(popup);
+        }
 
         return popup;
     };
@@ -145,27 +150,15 @@
             // Show popup if controls are visible, hide otherwise
             popup.style.display = video.controls ? 'block' : 'none';
         };
-
-        // Attach events to update popup position and visibility
-        video.addEventListener('mouseenter', () => {
-            video.controls = true; // Show controls on hover
-            updatePopupPosition();
-        });
-
-        video.addEventListener('mouseleave', () => {
-            video.controls = false; // Hide controls on leave
-            popup.style.display = 'none';
-        });
-
-        video.addEventListener('mousemove', updatePopupPosition); // Keep popup in sync
     };
 
-    // Function to observe and process all video elements
+    // Function to process and observe videos
     const processVideos = () => {
-        document.querySelectorAll('video').forEach((video) => {
+        document.querySelectorAll('video:not([data-processed])').forEach((video) => {
             addPlaysInline(video); // Add playsinline attribute
             setupControlToggle(video); // Add click-to-toggle controls
             synchronizePopupWithControls(video); // Sync popup with controls
+            video.setAttribute('data-processed', 'true'); // Mark video as processed
         });
     };
 
