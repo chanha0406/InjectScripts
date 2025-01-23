@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Prevent login script
-// @version      1.4
+// @version      1.5
 // @description  Remove login and logo + etc
 // @match        https://m.fmkorea.com/*
 // @match        https://www.fmkorea.com/*
@@ -86,7 +86,7 @@
 
                             // 다운로드 버튼 옆에 열기 버튼 추가
                             if (cloneButton) {
-                                cloneButton.parentNode.appendChild(openButton);
+                                cloneButton.parentNode.insertBefore(openButton, cloneButton.nextSibling);
                             }
 
                             const copyButton = document.createElement('button');
@@ -110,7 +110,7 @@
 
                             // 다운로드 버튼 옆에 열기 버튼 추가
                             if (cloneButton) {
-                                cloneButton.parentNode.appendChild(copyButton);
+                                cloneButton.parentNode.insertBefore(copyButton, cloneButton.nextSibling);
                             }
                         }
                     }
