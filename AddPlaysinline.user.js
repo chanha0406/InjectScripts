@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Add playsinline, Auto Play/Pause, Toggle Controls, and Popup Menu with Blob Download (jQuery Version)
 // @namespace    http://tampermonkey.net/
-// @version      4.85
+// @version      4.9
 // @description  Add playsinline to all videos, control play/pause based on visibility, toggle controls, and show a popup menu synchronized with the video controller and improved Blob Download.
 // @match        *://*/*
 // @updateURL    https://raw.githubusercontent.com/chanha0406/InjectScripts/master/AddPlaysinline.user.js
@@ -15,6 +15,8 @@
 (function () {
     'use strict';
     let nowPlaying = 0;
+    let pipVideo;
+    let pipReset;
 
     const excludedPlayPauseClasses = ['jwplayer', 'auto_media'];
     const excludedInlineClasses = ['jwplayer', 'auto_media'];
@@ -86,7 +88,7 @@
                 },
             });
 
-            const $copyButton = $('<button>Copy URL</button>').css({ marginRight: '10px', cursor: 'pointer' }).on('click', async () => {
+            const $copyButton = $('<button>🔗</button>').css({ marginRight: '10px', cursor: 'pointer' }).on('click', async () => {
                 const videoURL = video.currentSrc || video.src;
                 try {
                     await navigator.clipboard.writeText(videoURL);
@@ -97,12 +99,12 @@
                 }
             });
 
-            const $openButton = $('<button>Open</button>').css({ marginRight: '10px', cursor: 'pointer' }).on('click', () => {
+            const $openButton = $('<button>🌐</button>').css({ marginRight: '10px', cursor: 'pointer' }).on('click', () => {
                 const videoURL = video.currentSrc || video.src;
                 window.open(videoURL, '_blank');
             });
 
-            const $blobDownloadButton = $('<button>Blob Download</button>').css({ cursor: 'pointer' }).on('click', async () => {
+            const $blobDownloadButton = $('<button>📥</button>').css({ cursor: 'pointer' }).on('click', async () => {
                 const videoURL = video.currentSrc || video.src;
                 const fileName = getFileNameFromURL(videoURL);
 
@@ -162,20 +164,71 @@
             $(video).removeAttr('autoplay');
         }
 
+        const aspectRatio = video.videoWidth / video.videoHeight; // 비율 계산
+        let newWidth, newHeight;
+    
+        // 가로나 세로 중 하나를 400px로 맞춤
+        if (aspectRatio > 1) {
+            // 가로가 더 길면 가로를 400px로 설정
+            newWidth = 400;
+            newHeight = 400 / aspectRatio;
+        } else {
+            // 세로가 더 길거나 같으면 세로를 400px로 설정
+            newHeight = 400;
+            newWidth = 400 * aspectRatio;
+        }
+    
+        const cornerStyle = {
+            position: 'fixed',
+            bottom: '40px',
+            right: '10px',
+            width: `${newWidth}px`,
+            height: `${newHeight}px`,
+            zIndex: 9999,
+            backgroundColor: 'black',
+            display: 'none', // 기본적으로 숨김
+        };
+
+        // 원래 위치로 되돌리는 스타일
+        const resetStyle = () => {
+            video.style.position = '';
+            video.style.bottom = '';
+            video.style.right = '';
+            video.style.width = '';
+            video.style.height = '';
+            video.style.zIndex = '';
+            video.style.backgroundColor = '';
+            video.style.display = '';
+        };
+
+        // 코너 비디오 스타일 설정
+        const applyCornerStyle = () => {
+            Object.assign(video.style, cornerStyle);
+            video.style.display = 'block';
+            pipVideo = video;
+            pipReset = resetStyle;
+        };
+
         const observer = new IntersectionObserver(
             (entries) => {
                 entries.forEach((entry) => {
                     if (entry.isIntersecting && entry.intersectionRatio > 0.4) {
+                        if (pipVideo){
+                            if (pipVideo !== video){
+                                pipReset();
+                                pipReset = null;
+                                pipVideo = null;
+                                video.play();
+                            }
+                        }
+                        else{
                             video.play();
+                        }
                     }
                     else {
                         if (nowPlaying == 1) {
                             try {
-                                video.requestPictureInPicture()
-                                    .catch(e => {
-                                        console.error("pause video", e);
-                                        video.pause();
-                                    })
+                                applyCornerStyle();
                             }
                             catch (e) {
                                 console.error("pause video", e);
