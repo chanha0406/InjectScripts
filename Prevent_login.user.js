@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Prevent login script
-// @version      2025-01-23
+// @version      1.0
 // @description  Remove login and logo + etc
 // @match        https://m.fmkorea.com/*
 // @match        https://www.fmkorea.com/*
@@ -51,7 +51,7 @@
                                 event.preventDefault();
 
                                 // Add 'download' query to the URL
-                                const downloadURL = new URL(videoURL);
+                                const downloadURL = new URL(videoUrl);
                                 downloadURL.searchParams.set('download', 'true');
                         
                                 // Attempt to open in new tab
