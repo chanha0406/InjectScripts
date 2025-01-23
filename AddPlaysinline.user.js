@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Add playsinline, Auto Play/Pause, Toggle Controls, and Popup Menu with Blob Download (jQuery Version)
 // @namespace    http://tampermonkey.net/
-// @version      4.9
+// @version      4.92
 // @description  Add playsinline to all videos, control play/pause based on visibility, toggle controls, and show a popup menu synchronized with the video controller and improved Blob Download.
 // @match        *://*/*
 // @updateURL    https://raw.githubusercontent.com/chanha0406/InjectScripts/master/AddPlaysinline.user.js
@@ -178,35 +178,26 @@
             newWidth = 400 * aspectRatio;
         }
     
-        const cornerStyle = {
-            position: 'fixed',
-            bottom: '40px',
-            right: '10px',
-            width: `${newWidth}px`,
-            height: `${newHeight}px`,
-            zIndex: 9999,
-            backgroundColor: 'black',
-            display: 'none', // 기본적으로 숨김
-        };
-
-        // 원래 위치로 되돌리는 스타일
-        const resetStyle = () => {
-            video.style.position = '';
-            video.style.bottom = '';
-            video.style.right = '';
-            video.style.width = '';
-            video.style.height = '';
-            video.style.zIndex = '';
-            video.style.backgroundColor = '';
-            video.style.display = '';
-        };
-
-        // 코너 비디오 스타일 설정
         const applyCornerStyle = () => {
-            Object.assign(video.style, cornerStyle);
-            video.style.display = 'block';
-            pipVideo = video;
-            pipReset = resetStyle;
+            video.style.setProperty('position', 'fixed', 'important');
+            video.style.setProperty('bottom', '10px', 'important');
+            video.style.setProperty('right', '10px', 'important');
+            video.style.setProperty('width', `${newWidth}px`, 'important');
+            video.style.setProperty('height', `${newHeight}px`, 'important');
+            video.style.setProperty('z-index', '9999', 'important');
+            video.style.setProperty('background-color', 'black', 'important');
+            video.style.setProperty('display', 'block', 'important');
+        };
+    
+        const resetStyle = () => {
+            video.style.removeProperty('position');
+            video.style.removeProperty('bottom');
+            video.style.removeProperty('right');
+            video.style.removeProperty('width');
+            video.style.removeProperty('height');
+            video.style.removeProperty('z-index');
+            video.style.removeProperty('background-color');
+            video.style.removeProperty('display');
         };
 
         const observer = new IntersectionObserver(
