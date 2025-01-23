@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name         Prevent login script
-// @version      1.6
+// @version      1.7
 // @description  Remove login and logo + etc
 // @match        https://m.fmkorea.com/*
 // @match        https://www.fmkorea.com/*
 // @grant        none
-// @run-at  document-start
+// @run-at  document-end
 // @updateURL https://raw.githubusercontent.com/chanha0406/InjectScripts/master/Prevent_login.user.js
 // @downloadURL https://raw.githubusercontent.com/chanha0406/InjectScripts/master/Prevent_login.user.js
 // ==/UserScript==
