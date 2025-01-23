@@ -83,7 +83,7 @@
 
                             openButton.addEventListener('click', function (event) {
                                 event.preventDefault();
-                                window.open(videoUrl, '_blank');
+                                videoElement.requestPictureInPicture();
                             });
 
                             // 다운로드 버튼 옆에 열기 버튼 추가
