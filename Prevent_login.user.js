@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Prevent login script
-// @version      1.0
+// @version      1.1
 // @description  Remove login and logo + etc
 // @match        https://m.fmkorea.com/*
 // @match        https://www.fmkorea.com/*
@@ -41,28 +41,48 @@
                         downloadButton.style.transition = 'none'; // 트랜지션 중지 (필요한 경우)
 
                         // 기존 이벤트 제거 (다운로드 버튼 클릭 이벤트 초기화)
-                        const cloneButton = downloadButton.cloneNode(true); // 버튼 복제
-                        downloadButton.parentNode.replaceChild(cloneButton, downloadButton); // 기존 버튼을 복제한 버튼으로 교체
+                        const cloneButton = downloadButton.cloneNode(true);
+                        downloadButton.parentNode.replaceChild(cloneButton, downloadButton);
 
-                        // 다운로드 버튼 클릭 이벤트 리스너 추가
                         if (cloneButton && videoUrl) {
-                            cloneButton.addEventListener('click', function(event) {
-                                // 기본 동작 방지 (새 탭에서 열리는 것을 방지)
+                            cloneButton.addEventListener('click', function (event) {
                                 event.preventDefault();
-
-                                // Add 'download' query to the URL
-                                const downloadURL = new URL(videoUrl);
-                                downloadURL.searchParams.set('download', 'true');
-                        
-                                // Attempt to open in new tab
-                                const newTab = window.open(downloadURL.href, '_blank');
-                                if (!newTab || newTab.closed || typeof newTab.closed === 'undefined') {
-                                    // Fallback: Notify user
-                                    console.error('Popup blocked. Redirecting to URL...');
-                                    alert('팝업이 차단되었습니다. 다운로드를 현재 창에서 진행합니다.');
-                                    window.location.href = downloadURL.href;
-                                }
+                                // 비디오 URL을 Blob으로 처리하여 다운로드 트리거
+                                fetch(videoUrl)
+                                .then(response => response.blob())  // 비디오 URL로부터 Blob 객체 생성
+                                .then(blob => {
+                                    const link = document.createElement('a');
+                                    const url = URL.createObjectURL(blob);  // Blob URL 생성
+                                    link.href = url;
+                                    link.download = videoUrl.split('/').pop(); // 파일명은 URL의 마지막 부분을 사용
+                                    document.body.appendChild(link); // 링크를 body에 추가해야 정상적으로 동작
+                                    link.click();  // 다운로드 시작
+                                    document.body.removeChild(link); // 다운로드 후 링크 제거
+                                    URL.revokeObjectURL(url);  // Blob URL 해제
+                                })
+                                .catch(error => {
+                                    console.error('Download failed:', error);
+                                });
                             });
+                        }
+
+                        // 열기 버튼 추가
+                        if (videoUrl) {
+                            // 열기 버튼 만들기
+                            const openButton = document.createElement('button');
+                            openButton.textContent = '열기';
+                            openButton.classList.add('mejs__button', 'mejs__open-file');
+                            openButton.style.marginLeft = '5px';
+
+                            openButton.addEventListener('click', function (event) {
+                                event.preventDefault();
+                                window.open(videoUrl, '_blank');
+                            });
+
+                            // 다운로드 버튼 옆에 열기 버튼 추가
+                            if (cloneButton) {
+                                cloneButton.parentNode.appendChild(openButton);
+                            }
                         }
                     }
                 });
