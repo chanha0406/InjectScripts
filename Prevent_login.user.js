@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Prevent login script
-// @version      1.2
+// @version      1.3
 // @description  Remove login and logo + etc
 // @match        https://m.fmkorea.com/*
 // @match        https://www.fmkorea.com/*
@@ -72,10 +72,10 @@
                             const openButton = document.createElement('button');
                             openButton.textContent = '🌐';
                             openButton.classList.add('mejs__button', 'mejs__open-file');
-                            openButton.style.marginLeft = '5px';
+                            openButton.style.cursor = 'pointer';
                             openButton.style.backgroundColor = 'transparent';  // 배경 투명
                             openButton.style.border = 'none';  // 테두리 제거
-                            openButton.style.fontSize = '14px';  // 폰트 크기 조정
+                            openButton.style.fontSize = '16px';  // 폰트 크기 조정
                             openButton.style.textAlign = 'center';  // 텍스트 정렬
                             
 
@@ -92,10 +92,10 @@
                             const copyButton = document.createElement('button');
                             copyButton.textContent = '🔗';
                             copyButton.classList.add('mejs__button', 'mejs__open-file');
-                            copyButton.style.marginLeft = '5px';
+                            copyButton.style.cursor = 'pointer';
                             copyButton.style.backgroundColor = 'transparent';  // 배경 투명
                             copyButton.style.border = 'none';  // 테두리 제거
-                            copyButton.style.fontSize = '14px';  // 폰트 크기 조정
+                            copyButton.style.fontSize = '16px';  // 폰트 크기 조정
                             copyButton.style.textAlign = 'center';  // 텍스트 정렬
 
                             copyButton.onclick = async () => {
