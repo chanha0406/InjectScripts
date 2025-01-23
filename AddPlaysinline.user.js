@@ -11,6 +11,8 @@
 
 (function () {
     'use strict';
+    
+    const excludedClasses = ['jwplayer', 'auto_media']; // 제외할 클래스명 리스트
 
     const addPlaysInline = (video) => {
         if (!video.hasAttribute('playsinline')) {
@@ -215,7 +217,9 @@
         document.querySelectorAll('video').forEach((video) => {
             if (!video.getAttribute('data-popup-id')) {
                 synchronizePopupWithControls(video);
-                if (!video.closest('.jwplayer')){
+                const shouldExclude = excludedClasses.some((className) => video.closest(`.${className}`));
+
+                if (!shouldExclude) {
                     addPlaysInline(video);
                     setupVisibilityObserver(video);
                 }
