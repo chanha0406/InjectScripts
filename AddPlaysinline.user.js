@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Add playsinline, Auto Play/Pause, Toggle Controls, and Popup Menu with Blob Download (jQuery Version)
 // @namespace    http://tampermonkey.net/
-// @version      4.79
+// @version      4.80
 // @description  Add playsinline to all videos, control play/pause based on visibility, toggle controls, and show a popup menu synchronized with the video controller and improved Blob Download.
 // @match        *://*/*
 // @updateURL    https://raw.githubusercontent.com/chanha0406/InjectScripts/master/AddPlaysinline.user.js
@@ -27,7 +27,7 @@
     const setupControlToggle = (video, updatePopupPosition) => {
         let NextControls = !video.controls;
 
-        $(video).off('click').on('click', (event) => {
+        $(video).off('click').on('click.controlToggle', (event) => {
             const videoRect = video.getBoundingClientRect();
             const controlAreaY = videoRect.bottom - 40;
 
@@ -50,6 +50,27 @@
             updatePopupPosition();
         });
     };
+
+
+  const monitorEvents = (video, updatePopupPosition) => {
+      const observer = new MutationObserver(() => {
+          const events = $._data(video, 'events');
+          if (!events || !events.click || !events.click.some(e => e.namespace === 'controlToggle')) {
+            $(video).off('click').on('click.controlToggle', (event) => {
+                const videoRect = video.getBoundingClientRect();
+                const controlAreaY = videoRect.bottom - 40;
+
+                if (event.clientY < controlAreaY) {
+                    video.controls = NextControls;
+                    NextControls = !NextControls;
+                    updatePopupPosition();
+                }
+            });
+          }
+      });
+      observer.observe(video, { attributes: true });
+  };
+
 
     const getFileNameFromURL = (url) => {
         try {
@@ -150,6 +171,8 @@
         };
 
         setupControlToggle(video, updatePopupPosition);
+        monitorEvents(video, updatePopupPosition);
+
     };
 
     const addVisibilityPlayPause = (video) => {
