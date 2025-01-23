@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Auto Blob Download for Specific URLs
 // @namespace    http://tampermonkey.net/
-// @version      2.2
+// @version      2.3
 // @description  Automatically download video files with Blob when the URL contains specific extensions and the 'download' query.
 // @match        *://*/*
 // @grant        none
@@ -23,13 +23,16 @@
 
         // Check if the path contains a video extension and 'download' exists in query parameters
         if (videoExtensions.test(pathname)) {
-            function removeClassesFromVideo(video) {
+            function fitVideoToScreen(video) {
                 video.classList.remove('media-document', 'iPhone', 'video');
+                video.style.width = '100%';         // 화면의 너비에 맞게
+                video.style.height = '100%';        // 화면의 높이에 맞게
+                video.style.objectFit = 'contain';  // 비율을 유지하면서 화면에 맞도록 조정, 자르지 않음
             }
 
             // 페이지에서 이미 로드된 video 요소들에서 클래스를 제거
             const initialVideos = document.querySelectorAll('video');
-            initialVideos.forEach(removeClassesFromVideo);
+            initialVideos.forEach(fitVideoToScreen);
 
             // MutationObserver로 새로운 video 요소가 추가되었을 때 클래스 제거
             const observer = new MutationObserver((mutations) => {
@@ -37,7 +40,7 @@
                     // 새로 추가된 video 요소들에 대해
                     mutation.addedNodes.forEach((node) => {
                         if (node.tagName === 'VIDEO') {
-                            removeClassesFromVideo(node);
+                            fitVideoToScreen(node);
                         }
                     });
                 });
