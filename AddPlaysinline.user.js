@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Add playsinline, Auto Play/Pause, Toggle Controls, and Popup Menu with Blob Download
 // @namespace    http://tampermonkey.net/
-// @version      4.72
+// @version      4.73
 // @description  Add playsinline to all videos, control play/pause based on visibility, toggle controls, and show a popup menu synchronized with the video controller and improved Blob Download.
 // @match        *://*/*
 // @updateURL    https://raw.githubusercontent.com/chanha0406/InjectScripts/master/AddPlaysinline.user.js
@@ -11,7 +11,9 @@
 (function () {
     'use strict';
     
-    const excludedClasses = ['jwplayer', 'auto_media']; // 제외할 클래스명 리스트
+    const excludedPlayPauseClasses = ['jwplayer', 'auto_media']; // 제외할 클래스명 리스트
+    const excludedInlineClasses = ['jwplayer', 'auto_media']; // 제외할 클래스명 리스트
+    const excludedPopupClasses = ['auto_media']; // 제외할 클래스명 리스트
 
     const addPlaysInline = (video) => {
         if (!video.hasAttribute('playsinline')) {
@@ -152,7 +154,7 @@
         return popup;
     };
 
-    const synchronizePopupWithControls = (video) => {
+    const addPopupWithControls = (video) => {
         const popup = createPopupMenu(video);
 
         const updatePopupPosition = () => {
@@ -165,7 +167,7 @@
         setupControlToggle(video, updatePopupPosition);
     };
     
-    const setupVisibilityObserver = (video) => {
+    const addVisibilityPlayPause = (video) => {
         // Remove autoplay to prevent automatic playback on load
         if (video.hasAttribute('autoplay')) {
             video.removeAttribute('autoplay');
@@ -215,12 +217,16 @@
     const processVideos = () => {
         document.querySelectorAll('video').forEach((video) => {
             if (!video.getAttribute('data-popup-id')) {
-                synchronizePopupWithControls(video);
-                const shouldExclude = excludedClasses.some((className) => video.closest(`.${className}`));
+                if (!excludedPopupClasses.some((className) => video.closest(`.${className}`))) {
+                    addPopupWithControls(video);
+                }
 
-                if (!shouldExclude) {
+                if (!excludedInlineClasses.some((className) => video.closest(`.${className}`))) {
                     addPlaysInline(video);
-                    setupVisibilityObserver(video);
+                }
+                
+                if (!excludedPlayPauseClasses.some((className) => video.closest(`.${className}`))) {
+                    addVisibilityPlayPause(video);
                 }
             }
         });
