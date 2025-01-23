@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Prevent login script
-// @version      1.3
+// @version      1.4
 // @description  Remove login and logo + etc
 // @match        https://m.fmkorea.com/*
 // @match        https://www.fmkorea.com/*
@@ -99,7 +99,6 @@
                             copyButton.style.textAlign = 'center';  // 텍스트 정렬
 
                             copyButton.onclick = async () => {
-                                const videoUrl = video.currentSrc || video.src;
                                 try {
                                     await navigator.clipboard.writeText(videoUrl);
                                     alert('Video URL copied to clipboard: ' + videoUrl);
