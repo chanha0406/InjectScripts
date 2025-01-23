@@ -1,44 +1,33 @@
 // ==UserScript==
-// @name         Add playsinline, Auto Play/Pause, Toggle Controls, and Popup Menu with Blob Download
+// @name         Add playsinline, Auto Play/Pause, Toggle Controls, and Popup Menu with Blob Download (jQuery Version)
 // @namespace    http://tampermonkey.net/
-// @version      4.78
+// @version      4.79
 // @description  Add playsinline to all videos, control play/pause based on visibility, toggle controls, and show a popup menu synchronized with the video controller and improved Blob Download.
 // @match        *://*/*
 // @updateURL    https://raw.githubusercontent.com/chanha0406/InjectScripts/master/AddPlaysinline.user.js
 // @downloadURL  https://raw.githubusercontent.com/chanha0406/InjectScripts/master/AddPlaysinline.user.js
-// @run-at document-start
+// @run-at       document-start
+// @require      https://code.jquery.com/jquery-3.6.0.min.js
 // ==/UserScript==
 
 (function () {
     'use strict';
-    
-    const excludedPlayPauseClasses = ['jwplayer', 'auto_media']; // 제외할 클래스명 리스트
-    const excludedInlineClasses = ['jwplayer', 'auto_media']; // 제외할 클래스명 리스트
-    const excludedPopupClasses = ['auto_media']; // 제외할 클래스명 리스트
+
+    const excludedPlayPauseClasses = ['jwplayer', 'auto_media'];
+    const excludedInlineClasses = ['jwplayer', 'auto_media'];
+    const excludedPopupClasses = ['auto_media'];
 
     const addPlaysInline = (video) => {
-        if (!video.hasAttribute('playsinline')) {
-            video.setAttribute('playsinline', 'true');
-            video.setAttribute('webkit-playsinline', 'true');
+        if (!$(video).attr('playsinline')) {
+            $(video).attr('playsinline', 'true');
+            $(video).attr('webkit-playsinline', 'true');
         }
     };
 
     const setupControlToggle = (video, updatePopupPosition) => {
         let NextControls = !video.controls;
 
-        video.addEventListener('pause', () => {
-            video.controls = true;
-            NextControls = false;
-            updatePopupPosition();
-        });
-
-        video.addEventListener('play', () => {
-            video.controls = false;
-            NextControls = true;
-            updatePopupPosition();
-        });
-
-        video.addEventListener('click', (event) => {
+        $(video).off('click').on('click', (event) => {
             const videoRect = video.getBoundingClientRect();
             const controlAreaY = videoRect.bottom - 40;
 
@@ -47,6 +36,18 @@
                 NextControls = !NextControls;
                 updatePopupPosition();
             }
+        });
+
+        $(video).on('pause', () => {
+            video.controls = true;
+            NextControls = false;
+            updatePopupPosition();
+        });
+
+        $(video).on('play', () => {
+            video.controls = false;
+            NextControls = true;
+            updatePopupPosition();
         });
     };
 
@@ -59,29 +60,28 @@
     };
 
     const createPopupMenu = (video) => {
-        let popupId = video.getAttribute('data-popup-id');
-        let popup;
+        let popupId = $(video).data('popup-id');
+        let $popup;
 
         if (!popupId) {
             popupId = `popup-${Math.random().toString(36).substr(2, 9)}`;
-            video.setAttribute('data-popup-id', popupId);
+            $(video).data('popup-id', popupId);
 
-            popup = document.createElement('div');
-            popup.id = popupId;
-            popup.style.position = 'absolute';
-            popup.style.zIndex = '9999';
-            popup.style.background = 'white';
-            popup.style.border = '1px solid #ccc';
-            popup.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
-            popup.style.padding = '10px';
-            popup.style.borderRadius = '8px';
-            popup.style.display = 'none';
+            $popup = $('<div></div>', {
+                id: popupId,
+                css: {
+                    position: 'absolute',
+                    zIndex: 9999,
+                    background: 'white',
+                    border: '1px solid #ccc',
+                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                    padding: '10px',
+                    borderRadius: '8px',
+                    display: 'none',
+                },
+            });
 
-            const copyButton = document.createElement('button');
-            copyButton.textContent = 'Copy URL';
-            copyButton.style.marginRight = '10px';
-            copyButton.style.cursor = 'pointer';
-            copyButton.onclick = async () => {
+            const $copyButton = $('<button>Copy URL</button>').css({ marginRight: '10px', cursor: 'pointer' }).on('click', async () => {
                 const videoURL = video.currentSrc || video.src;
                 try {
                     await navigator.clipboard.writeText(videoURL);
@@ -90,113 +90,92 @@
                     console.error('Failed to copy URL:', error);
                     alert('Failed to copy URL. Please try again.');
                 }
-            };
+            });
 
-            const openButton = document.createElement('button');
-            openButton.textContent = 'Open';
-            openButton.style.marginRight = '10px';
-            openButton.style.cursor = 'pointer';
-            openButton.onclick = () => {
+            const $openButton = $('<button>Open</button>').css({ marginRight: '10px', cursor: 'pointer' }).on('click', () => {
                 const videoURL = video.currentSrc || video.src;
                 window.open(videoURL, '_blank');
-            };
+            });
 
-            const blobDownloadButton = document.createElement('button');
-            blobDownloadButton.textContent = 'Blob Download';
-            blobDownloadButton.style.cursor = 'pointer';
-
-            blobDownloadButton.onclick = async () => {
+            const $blobDownloadButton = $('<button>Blob Download</button>').css({ cursor: 'pointer' }).on('click', async () => {
                 const videoURL = video.currentSrc || video.src;
                 const fileName = getFileNameFromURL(videoURL);
-            
+
                 try {
                     const response = await fetch(videoURL, { mode: 'cors' });
-            
+
                     if (!response.ok) {
                         throw new Error(`HTTP error! Status: ${response.status}`);
                     }
-            
+
                     const blob = await response.blob();
                     const url = URL.createObjectURL(blob);
-            
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = fileName;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
+
+                    const link = $('<a></a>').attr({ href: url, download: fileName }).appendTo('body');
+                    link[0].click();
+                    link.remove();
                     URL.revokeObjectURL(url);
                 } catch (error) {
                     console.error('Blob Download failed:', error);
-            
-                    // Add 'download' query to the URL
+
                     const downloadURL = new URL(videoURL);
                     downloadURL.searchParams.set('download', 'true');
-            
-                    // Attempt to open in new tab
+
                     const newTab = window.open(downloadURL.href, '_blank');
                     if (!newTab || newTab.closed || typeof newTab.closed === 'undefined') {
-                        // Fallback: Notify user
-                        console.error('Popup blocked. Redirecting to URL...');
                         alert('팝업이 차단되었습니다. 다운로드를 현재 창에서 진행합니다.');
                         window.location.href = downloadURL.href;
                     }
                 }
-            };            
+            });
 
-            popup.appendChild(copyButton);
-            popup.appendChild(openButton);
-            popup.appendChild(blobDownloadButton);
-            document.body.appendChild(popup);
+            $popup.append($copyButton, $openButton, $blobDownloadButton).appendTo('body');
         } else {
-            popup = document.querySelector(`#${popupId}`);
+            $popup = $(`#${popupId}`);
         }
 
-        return popup;
+        return $popup;
     };
 
     const addPopupWithControls = (video) => {
-        const popup = createPopupMenu(video);
+        const $popup = createPopupMenu(video);
 
         const updatePopupPosition = () => {
             const rect = video.getBoundingClientRect();
-            popup.style.left = `${rect.left + window.scrollX}px`;
-            popup.style.top = `${rect.bottom + window.scrollY + 5}px`;
-            popup.style.display = video.controls ? 'block' : 'none';
+            $popup.css({
+                left: `${rect.left + window.scrollX}px`,
+                top: `${rect.bottom + window.scrollY + 5}px`,
+                display: video.controls ? 'block' : 'none',
+            });
         };
 
         setupControlToggle(video, updatePopupPosition);
     };
-    
+
     const addVisibilityPlayPause = (video) => {
-        // Remove autoplay to prevent automatic playback on load
-        if (video.hasAttribute('autoplay')) {
-            video.removeAttribute('autoplay');
+        if ($(video).attr('autoplay')) {
+            $(video).removeAttr('autoplay');
         }
-    
+
         const observer = new IntersectionObserver(
             (entries) => {
                 entries.forEach((entry) => {
                     if (entry.isIntersecting && entry.intersectionRatio > 0.3) {
-                        // Play video when at least 30% visible
                         if (video.paused) {
                             video.play();
                         }
                     } else {
-                        // Pause video when less than 30% visible
                         if (!video.paused) {
                             video.pause();
                         }
                     }
                 });
             },
-            { threshold: [0.3] } // Trigger at 30% visibility
+            { threshold: [0.3] }
         );
-    
-        // Observe video visibility
+
         observer.observe(video);
-    
-        // Ensure the video stays paused if it's not visible on load
+
         const onVideoLoad = () => {
             const rect = video.getBoundingClientRect();
             const isVisible =
@@ -204,29 +183,27 @@
                 rect.bottom > 0 &&
                 rect.left < window.innerWidth &&
                 rect.right > 0;
-    
+
             if (!isVisible && !video.paused) {
                 video.pause();
             }
         };
-    
-        // Handle events to ensure the video is paused if not visible
-        video.addEventListener('loadeddata', onVideoLoad);
-        video.addEventListener('canplay', onVideoLoad);
+
+        $(video).on('loadeddata canplay', onVideoLoad);
     };
-    
+
     const processVideos = () => {
-        document.querySelectorAll('video').forEach((video) => {
-            if (!video.getAttribute('data-popup-id')) {
-                if (!excludedPopupClasses.some((className) => video.closest(`.${className}`))) {
+        $('video').each((_, video) => {
+            if (!$(video).data('popup-id')) {
+                if (!excludedPopupClasses.some((className) => $(video).closest(`.${className}`).length)) {
                     addPopupWithControls(video);
                 }
 
-                if (!excludedInlineClasses.some((className) => video.closest(`.${className}`))) {
+                if (!excludedInlineClasses.some((className) => $(video).closest(`.${className}`).length)) {
                     addPlaysInline(video);
                 }
-                
-                if (!excludedPlayPauseClasses.some((className) => video.closest(`.${className}`))) {
+
+                if (!excludedPlayPauseClasses.some((className) => $(video).closest(`.${className}`).length)) {
                     addVisibilityPlayPause(video);
                 }
             }
