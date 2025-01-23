@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Prevent login script
-// @version      1.1
+// @version      1.2
 // @description  Remove login and logo + etc
 // @match        https://m.fmkorea.com/*
 // @match        https://www.fmkorea.com/*
@@ -70,9 +70,14 @@
                         if (videoUrl) {
                             // 열기 버튼 만들기
                             const openButton = document.createElement('button');
-                            openButton.textContent = '열기';
+                            openButton.textContent = '🌐';
                             openButton.classList.add('mejs__button', 'mejs__open-file');
                             openButton.style.marginLeft = '5px';
+                            openButton.style.backgroundColor = 'transparent';  // 배경 투명
+                            openButton.style.border = 'none';  // 테두리 제거
+                            openButton.style.fontSize = '14px';  // 폰트 크기 조정
+                            openButton.style.textAlign = 'center';  // 텍스트 정렬
+                            
 
                             openButton.addEventListener('click', function (event) {
                                 event.preventDefault();
@@ -82,6 +87,31 @@
                             // 다운로드 버튼 옆에 열기 버튼 추가
                             if (cloneButton) {
                                 cloneButton.parentNode.appendChild(openButton);
+                            }
+
+                            const copyButton = document.createElement('button');
+                            copyButton.textContent = '🔗';
+                            copyButton.classList.add('mejs__button', 'mejs__open-file');
+                            copyButton.style.marginLeft = '5px';
+                            copyButton.style.backgroundColor = 'transparent';  // 배경 투명
+                            copyButton.style.border = 'none';  // 테두리 제거
+                            copyButton.style.fontSize = '14px';  // 폰트 크기 조정
+                            copyButton.style.textAlign = 'center';  // 텍스트 정렬
+
+                            copyButton.onclick = async () => {
+                                const videoUrl = video.currentSrc || video.src;
+                                try {
+                                    await navigator.clipboard.writeText(videoUrl);
+                                    alert('Video URL copied to clipboard: ' + videoUrl);
+                                } catch (error) {
+                                    console.error('Failed to copy URL:', error);
+                                    alert('Failed to copy URL. Please try again.');
+                                }
+                            };
+
+                            // 다운로드 버튼 옆에 열기 버튼 추가
+                            if (cloneButton) {
+                                cloneButton.parentNode.appendChild(copyButton);
                             }
                         }
                     }
