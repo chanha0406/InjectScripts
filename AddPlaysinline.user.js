@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Add playsinline, Auto Play/Pause, Toggle Controls, and Popup Menu with Blob Download
 // @namespace    http://tampermonkey.net/
-// @version      4.75
+// @version      4.76
 // @description  Add playsinline to all videos, control play/pause based on visibility, toggle controls, and show a popup menu synchronized with the video controller and improved Blob Download.
 // @match        *://*/*
 // @updateURL    https://raw.githubusercontent.com/chanha0406/InjectScripts/master/AddPlaysinline.user.js
@@ -35,6 +35,7 @@
         });
 
         video.addEventListener('click', (event) => {
+            event.preventDefault();
             const videoRect = video.getBoundingClientRect();
             const controlAreaY = videoRect.bottom - 40;
 
