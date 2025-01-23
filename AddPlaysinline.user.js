@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Add playsinline, Auto Play/Pause, Toggle Controls, and Popup Menu with Blob Download (jQuery Version)
 // @namespace    http://tampermonkey.net/
-// @version      4.84
+// @version      4.85
 // @description  Add playsinline to all videos, control play/pause based on visibility, toggle controls, and show a popup menu synchronized with the video controller and improved Blob Download.
 // @match        *://*/*
 // @updateURL    https://raw.githubusercontent.com/chanha0406/InjectScripts/master/AddPlaysinline.user.js
@@ -14,6 +14,7 @@
 
 (function () {
     'use strict';
+    let nowPlaying = 0;
 
     const excludedPlayPauseClasses = ['jwplayer', 'auto_media'];
     const excludedInlineClasses = ['jwplayer', 'auto_media'];
@@ -43,12 +44,14 @@
         $(video).on('pause', () => {
             video.controls = true;
             NextControls = false;
+            nowPlaying -= 1;
             updatePopupPosition();
         });
 
         $(video).on('play', () => {
             video.controls = false;
             NextControls = true;
+            nowPlaying += 1;
             updatePopupPosition();
         });
     };
@@ -166,7 +169,22 @@
                             video.play();
                     }
                     else {
+                        if (nowPlaying == 1) {
+                            try {
+                                video.requestPictureInPicture()
+                                    .catch(e => {
+                                        console.error("pause video", e);
+                                        video.pause();
+                                    })
+                            }
+                            catch (e) {
+                                console.error("pause video", e);
+                                video.pause();
+                            }
+                        }
+                        else {
                             video.pause();
+                        }
                     }
                 });
             },
