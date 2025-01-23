@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Prevent login script
-// @version      1.5
+// @version      1.6
 // @description  Remove login and logo + etc
 // @match        https://m.fmkorea.com/*
 // @match        https://www.fmkorea.com/*
@@ -77,6 +77,7 @@
                             openButton.style.border = 'none';  // 테두리 제거
                             openButton.style.fontSize = '16px';  // 폰트 크기 조정
                             openButton.style.textAlign = 'center';  // 텍스트 정렬
+                            openButton.style.padding = '0px'; 
                             
 
                             openButton.addEventListener('click', function (event) {
@@ -97,6 +98,7 @@
                             copyButton.style.border = 'none';  // 테두리 제거
                             copyButton.style.fontSize = '16px';  // 폰트 크기 조정
                             copyButton.style.textAlign = 'center';  // 텍스트 정렬
+                            copyButton.style.padding = '0px'; 
 
                             copyButton.onclick = async () => {
                                 try {
