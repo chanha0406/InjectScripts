@@ -24,17 +24,13 @@
     };
 
     const setupControlToggle = (video, updatePopupPosition) => {
-        let controlsVisible = true;
-
         video.addEventListener('pause', () => {
             video.controls = true;
-            controlsVisible = true;
             updatePopupPosition();
         });
 
         video.addEventListener('play', () => {
             video.controls = false;
-            controlsVisible = false;
             updatePopupPosition();
         });
 
@@ -43,8 +39,7 @@
             const controlAreaY = videoRect.bottom - 40;
 
             if (event.clientY < controlAreaY) {
-                controlsVisible = !controlsVisible;
-                video.controls = controlsVisible;
+                video.controls = !video.controls;
                 updatePopupPosition();
             }
         });
