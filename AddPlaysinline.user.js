@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Add playsinline, Auto Play/Pause, Toggle Controls, and Popup Menu with Blob Download (jQuery Version)
 // @namespace    http://tampermonkey.net/
-// @version      4.92
+// @version      4.93
 // @description  Add playsinline to all videos, control play/pause based on visibility, toggle controls, and show a popup menu synchronized with the video controller and improved Blob Download.
 // @match        *://*/*
 // @updateURL    https://raw.githubusercontent.com/chanha0406/InjectScripts/master/AddPlaysinline.user.js
@@ -170,25 +170,14 @@
         // 가로나 세로 중 하나를 400px로 맞춤
         if (aspectRatio > 1) {
             // 가로가 더 길면 가로를 400px로 설정
-            newWidth = 400;
-            newHeight = 400 / aspectRatio;
+            newWidth = "400px";
+            newHeight = "auto";
         } else {
             // 세로가 더 길거나 같으면 세로를 400px로 설정
-            newHeight = 400;
-            newWidth = 400 * aspectRatio;
+            newHeight = "400px";
+            newWidth = "auto";
         }
-    
-        const applyCornerStyle = () => {
-            video.style.setProperty('position', 'fixed', 'important');
-            video.style.setProperty('bottom', '10px', 'important');
-            video.style.setProperty('right', '10px', 'important');
-            video.style.setProperty('width', `${newWidth}px`, 'important');
-            video.style.setProperty('height', `${newHeight}px`, 'important');
-            video.style.setProperty('z-index', '9999', 'important');
-            video.style.setProperty('background-color', 'black', 'important');
-            video.style.setProperty('display', 'block', 'important');
-        };
-    
+
         const resetStyle = () => {
             video.style.removeProperty('position');
             video.style.removeProperty('bottom');
@@ -198,6 +187,25 @@
             video.style.removeProperty('z-index');
             video.style.removeProperty('background-color');
             video.style.removeProperty('display');
+
+            // window.scrollTo({
+            //     top: window.scrollY + newHeight, // 현재 스크롤 위치 + 비디오 위치 + newHeight
+            //     left: 0,
+            //     behavior: 'auto',
+            // });
+        };
+
+        const applyCornerStyle = () => {
+            video.style.setProperty('position', 'fixed', 'important');
+            video.style.setProperty('bottom', '40px', 'important');
+            video.style.setProperty('right', '10px', 'important');
+            video.style.setProperty('width', `${newWidth}`, 'important');
+            video.style.setProperty('height', `${newHeight}`, 'important');
+            video.style.setProperty('z-index', '9999', 'important');
+            video.style.setProperty('background-color', 'black', 'important');
+            video.style.setProperty('display', 'block', 'important');
+            pipVideo = video;
+            pipReset = resetStyle;
         };
 
         const observer = new IntersectionObserver(
@@ -210,6 +218,12 @@
                                 pipReset = null;
                                 pipVideo = null;
                                 video.play();
+                                const videoRect = video.getBoundingClientRect();
+                                window.scrollTo({
+                                    top: window.scrollY + videoRect.top, // 현재 스크롤 위치 + 비디오 위치 + newHeight
+                                    left: 0,
+                                    behavior: 'auto',
+                                });
                             }
                         }
                         else{
