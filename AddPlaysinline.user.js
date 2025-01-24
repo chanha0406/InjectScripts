@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         Add playsinline, Auto Play/Pause, Toggle Controls, and Popup Menu with Blob Download (jQuery Version)
+// @name         Add playsinline, Auto Play/Pause, Toggle Controls, and Popup Menu with Blob Download (Vanilla JS Version)
 // @namespace    http://tampermonkey.net/
-// @version      4.98
+// @version      5.0
 // @description  Add playsinline to all videos, control play/pause based on visibility, toggle controls, and show a popup menu synchronized with the video controller and improved Blob Download.
 // @match        *://*/*
 // @updateURL    https://raw.githubusercontent.com/chanha0406/InjectScripts/master/AddPlaysinline.user.js
@@ -9,7 +9,6 @@
 // @exclude      *://*.youtube.com/*
 // @exclude      *://youtube.com/*
 // @run-at       document-end
-// @require      https://code.jquery.com/jquery-3.6.0.min.js
 // ==/UserScript==
 
 (function () {
@@ -20,34 +19,34 @@
     const excludedPopupClasses = ['auto_media'];
 
     const addPlaysInline = (video) => {
-        if (!$(video).attr('playsinline')) {
-            $(video).attr('playsinline', 'true');
-            $(video).attr('webkit-playsinline', 'true');
+        if (!video.hasAttribute('playsinline')) {
+            video.setAttribute('playsinline', 'true');
+            video.setAttribute('webkit-playsinline', 'true');
         }
     };
 
     const setupControlToggle = (video, updatePopupPosition) => {
-        let NextControls = !video.controls;
+        let nextControls = !video.controls;
 
-        $(video).off('click').on('click', (event) => {
+        video.addEventListener('click', (event) => {
             const videoRect = video.getBoundingClientRect();
             const controlAreaY = videoRect.bottom - 40;
 
             if (event.clientY < controlAreaY) {
-                video.controls = NextControls;
-                NextControls = !NextControls;
+                video.controls = nextControls;
+                nextControls = !nextControls;
                 updatePopupPosition();
             }
         });
 
-        $(video).on('pause', () => {
+        video.addEventListener('pause', () => {
             video.controls = true;
-            NextControls = false;
+            nextControls = false;
         });
 
-        $(video).on('play', () => {
+        video.addEventListener('play', () => {
             video.controls = false;
-            NextControls = true;
+            nextControls = true;
         });
     };
 
@@ -60,28 +59,30 @@
     };
 
     const createPopupMenu = (video) => {
-        let popupId = $(video).data('popup-id');
-        let $popup;
+        let popupId = video.dataset.popupId;
+        let popup;
 
         if (!popupId) {
             popupId = `popup-${Math.random().toString(36).substr(2, 9)}`;
-            $(video).data('popup-id', popupId);
+            video.dataset.popupId = popupId;
 
-            $popup = $('<div></div>', {
-                id: popupId,
-                css: {
-                    position: 'absolute',
-                    zIndex: 9999,
-                    background: 'white',
-                    border: '1px solid #ccc',
-                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-                    padding: '10px',
-                    borderRadius: '8px',
-                    display: 'none',
-                },
+            popup = document.createElement('div');
+            popup.id = popupId;
+            Object.assign(popup.style, {
+                position: 'absolute',
+                zIndex: 9999,
+                background: 'white',
+                border: '1px solid #ccc',
+                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                padding: '10px',
+                borderRadius: '8px',
+                display: 'none',
             });
 
-            const $copyButton = $('<button>🔗</button>').css({ marginRight: '10px', cursor: 'pointer' }).on('click', async () => {
+            const copyButton = document.createElement('button');
+            copyButton.textContent = '🔗';
+            Object.assign(copyButton.style, { marginRight: '10px', cursor: 'pointer' });
+            copyButton.addEventListener('click', async () => {
                 const videoURL = video.currentSrc || video.src;
                 try {
                     await navigator.clipboard.writeText(videoURL);
@@ -92,12 +93,18 @@
                 }
             });
 
-            const $openButton = $('<button>🌐</button>').css({ marginRight: '10px', cursor: 'pointer' }).on('click', () => {
+            const openButton = document.createElement('button');
+            openButton.textContent = '🌐';
+            Object.assign(openButton.style, { marginRight: '10px', cursor: 'pointer' });
+            openButton.addEventListener('click', () => {
                 const videoURL = video.currentSrc || video.src;
                 window.open(videoURL, '_blank');
             });
 
-            const $blobDownloadButton = $('<button>📥</button>').css({ cursor: 'pointer' }).on('click', async () => {
+            const blobDownloadButton = document.createElement('button');
+            blobDownloadButton.textContent = '📥';
+            Object.assign(blobDownloadButton.style, { cursor: 'pointer' });
+            blobDownloadButton.addEventListener('click', async () => {
                 const videoURL = video.currentSrc || video.src;
                 const fileName = getFileNameFromURL(videoURL);
 
@@ -111,9 +118,12 @@
                     const blob = await response.blob();
                     const url = URL.createObjectURL(blob);
 
-                    const link = $('<a></a>').attr({ href: url, download: fileName }).appendTo('body');
-                    link[0].click();
-                    link.remove();
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = fileName;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
                     URL.revokeObjectURL(url);
                 } catch (error) {
                     console.error('Blob Download failed:', error);
@@ -129,41 +139,41 @@
                 }
             });
 
-            $popup.append($copyButton, $openButton, $blobDownloadButton).appendTo('body');
+            popup.appendChild(copyButton);
+            popup.appendChild(openButton);
+            popup.appendChild(blobDownloadButton);
+            document.body.appendChild(popup);
         } else {
-            $popup = $(`#${popupId}`);
+            popup = document.getElementById(popupId);
         }
 
-        return $popup;
+        return popup;
     };
 
     const addPopupWithControls = (video) => {
-        const $popup = createPopupMenu(video);
+        const popup = createPopupMenu(video);
 
         const updatePopupPosition = () => {
             const rect = video.getBoundingClientRect();
-            $popup.css({
-                left: `${rect.left + window.scrollX}px`,
-                top: `${rect.bottom + window.scrollY + 5}px`,
-                display: video.controls ? 'block' : 'none',
-            });
+            popup.style.left = `${rect.left + window.scrollX}px`;
+            popup.style.top = `${rect.bottom + window.scrollY + 5}px`;
+            popup.style.display = video.controls ? 'block' : 'none';
         };
 
         setupControlToggle(video, updatePopupPosition);
     };
 
     const addVisibilityPlayPause = (video) => {
-        if ($(video).attr('autoplay')) {
-            $(video).removeAttr('autoplay');
+        if (video.hasAttribute('autoplay')) {
+            video.removeAttribute('autoplay');
         }
 
         const observer = new IntersectionObserver(
             (entries) => {
                 entries.forEach((entry) => {
                     if (entry.isIntersecting && entry.intersectionRatio > 0.4) {
-                                video.play();
-                    }
-                    else {
+                        video.play();
+                    } else {
                         video.pause();
                     }
                 });
@@ -186,24 +196,25 @@
             }
         };
 
-        $(video).on('loadeddata canplay', onVideoLoad);
+        video.addEventListener('loadeddata', onVideoLoad);
+        video.addEventListener('canplay', onVideoLoad);
     };
 
     const processVideos = () => {
-        $('video').each((_, video) => {
-            if (!$(video).data('popup-id')) {
-                if (!excludedPopupClasses.some((className) => $(video).closest(`.${className}`).length)) {
-                    const blobReg = /^blob:/i; // Supported video extensions
+        document.querySelectorAll('video').forEach((video) => {
+            if (!video.dataset.popupId) {
+                if (!excludedPopupClasses.some((className) => video.closest(`.${className}`))) {
+                    const blobReg = /^blob:/i;
                     if (!blobReg.test(video.currentSrc) && !blobReg.test(video.src)) {
                         addPopupWithControls(video);
                     }
                 }
 
-                if (!excludedInlineClasses.some((className) => $(video).closest(`.${className}`).length)) {
+                if (!excludedInlineClasses.some((className) => video.closest(`.${className}`))) {
                     addPlaysInline(video);
                 }
 
-                if (!excludedPlayPauseClasses.some((className) => $(video).closest(`.${className}`).length)) {
+                if (!excludedPlayPauseClasses.some((className) => video.closest(`.${className}`))) {
                     addVisibilityPlayPause(video);
                 }
             }
