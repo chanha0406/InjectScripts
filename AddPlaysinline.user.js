@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Add playsinline, Auto Play/Pause, Toggle Controls, and Popup Menu with Blob Download (Vanilla JS Version)
 // @namespace    http://tampermonkey.net/
-// @version      5.0
+// @version      5.1
 // @description  Add playsinline to all videos, control play/pause based on visibility, toggle controls, and show a popup menu synchronized with the video controller and improved Blob Download.
 // @match        *://*/*
 // @updateURL    https://raw.githubusercontent.com/chanha0406/InjectScripts/master/AddPlaysinline.user.js
@@ -14,39 +14,47 @@
 (function () {
     'use strict';
 
-    const excludedPlayPauseClasses = ['jwplayer', 'auto_media'];
-    const excludedInlineClasses = ['jwplayer', 'auto_media'];
-    const excludedPopupClasses = ['auto_media'];
+    const exclusionClasses = {
+        playPause: ['jwplayer', 'auto_media'],
+        inline: ['jwplayer', 'auto_media'],
+        popup: ['auto_media']
+    };
 
-    const addPlaysInline = (video) => {
-        if (!video.hasAttribute('playsinline')) {
-            video.setAttribute('playsinline', 'true');
-            video.setAttribute('webkit-playsinline', 'true');
+    const handleControlToggleClick = (video, event, nextControls, updatePopupPosition) => {
+        const videoRect = video.getBoundingClientRect();
+        const controlAreaY = videoRect.bottom - 40;
+
+        if (event.clientY < controlAreaY) {
+            video.controls = nextControls;
+            updatePopupPosition();
+            return !nextControls;
         }
+        return nextControls;
+    };
+
+    const handleControlTogglePause = (video) => {
+        video.controls = true;
+        return false;
+    };
+
+    const handleControlTogglePlay = (video) => {
+        video.controls = false;
+        return true;
     };
 
     const setupControlToggle = (video, updatePopupPosition) => {
         let nextControls = !video.controls;
 
         video.addEventListener('click', (event) => {
-            const videoRect = video.getBoundingClientRect();
-            const controlAreaY = videoRect.bottom - 40;
-
-            if (event.clientY < controlAreaY) {
-                video.controls = nextControls;
-                nextControls = !nextControls;
-                updatePopupPosition();
-            }
+            nextControls = handleControlToggleClick(video, event, nextControls, updatePopupPosition);
         });
 
         video.addEventListener('pause', () => {
-            video.controls = true;
-            nextControls = false;
+            nextControls = handleControlTogglePause(video);
         });
 
         video.addEventListener('play', () => {
-            video.controls = false;
-            nextControls = true;
+            nextControls = handleControlTogglePlay(video);
         });
     };
 
@@ -56,6 +64,14 @@
         } catch (e) {
             return 'video.mp4';
         }
+    };
+
+    const createButton = (text, style, onClick) => {
+        const button = document.createElement('button');
+        button.textContent = text;
+        Object.assign(button.style, style);
+        button.addEventListener('click', onClick);
+        return button;
     };
 
     const createPopupMenu = (video) => {
@@ -79,10 +95,7 @@
                 display: 'none',
             });
 
-            const copyButton = document.createElement('button');
-            copyButton.textContent = '🔗';
-            Object.assign(copyButton.style, { marginRight: '10px', cursor: 'pointer' });
-            copyButton.addEventListener('click', async () => {
+            const copyButton = createButton('🔗', { marginRight: '10px', cursor: 'pointer' }, async () => {
                 const videoURL = video.currentSrc || video.src;
                 try {
                     await navigator.clipboard.writeText(videoURL);
@@ -93,18 +106,12 @@
                 }
             });
 
-            const openButton = document.createElement('button');
-            openButton.textContent = '🌐';
-            Object.assign(openButton.style, { marginRight: '10px', cursor: 'pointer' });
-            openButton.addEventListener('click', () => {
+            const openButton = createButton('🌐', { marginRight: '10px', cursor: 'pointer' }, () => {
                 const videoURL = video.currentSrc || video.src;
                 window.open(videoURL, '_blank');
             });
 
-            const blobDownloadButton = document.createElement('button');
-            blobDownloadButton.textContent = '📥';
-            Object.assign(blobDownloadButton.style, { cursor: 'pointer' });
-            blobDownloadButton.addEventListener('click', async () => {
+            const blobDownloadButton = createButton('📥', { cursor: 'pointer' }, async () => {
                 const videoURL = video.currentSrc || video.src;
                 const fileName = getFileNameFromURL(videoURL);
 
@@ -163,59 +170,79 @@
         setupControlToggle(video, updatePopupPosition);
     };
 
-    const addVisibilityPlayPause = (video) => {
-        if (video.hasAttribute('autoplay')) {
-            video.removeAttribute('autoplay');
+    class VisibilityHandler {
+        constructor(video) {
+            this.video = video;
+            this.observer = new IntersectionObserver(this.handleVisibilityChange.bind(this), { threshold: [0.4, 0.6] });
+            this.init();
         }
 
-        const observer = new IntersectionObserver(
-            (entries) => {
-                entries.forEach((entry) => {
-                    if (entry.isIntersecting && entry.intersectionRatio > 0.4) {
-                        video.play();
-                    } else {
-                        video.pause();
-                    }
-                });
-            },
-            { threshold: [0.4, 0.6] }
-        );
+        init() {
+            if (this.video.hasAttribute('autoplay')) {
+                this.video.removeAttribute('autoplay');
+            }
 
-        observer.observe(video);
+            this.observer.observe(this.video);
 
-        const onVideoLoad = () => {
-            const rect = video.getBoundingClientRect();
+            this.video.addEventListener('loadeddata', this.handleVideoLoad.bind(this));
+            this.video.addEventListener('canplay', this.handleVideoLoad.bind(this));
+        }
+
+        handleVisibilityChange(entries) {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting && entry.intersectionRatio > 0.4) {
+                    this.video.play();
+                } else {
+                    this.video.pause();
+                }
+            });
+        }
+
+        handleVideoLoad() {
+            const rect = this.video.getBoundingClientRect();
             const isVisible =
                 rect.top < window.innerHeight &&
                 rect.bottom > 0 &&
                 rect.left < window.innerWidth &&
                 rect.right > 0;
 
-            if (!isVisible && !video.paused) {
-                video.pause();
+            if (!isVisible && !this.video.paused) {
+                this.video.pause();
             }
-        };
+        }
+    }
 
-        video.addEventListener('loadeddata', onVideoLoad);
-        video.addEventListener('canplay', onVideoLoad);
-    };
+    class MutationHandler {
+        constructor(callback) {
+            this.callback = callback;
+            this.observer = new MutationObserver(this.callback);
+            this.init();
+        }
+
+        init() {
+            this.observer.observe(document.body, { childList: true, subtree: true });
+        }
+    }
 
     const processVideos = () => {
         document.querySelectorAll('video').forEach((video) => {
             if (!video.dataset.popupId) {
-                if (!excludedPopupClasses.some((className) => video.closest(`.${className}`))) {
+                if (!exclusionClasses.popup.some((className) => video.closest(`.${className}`))) {
                     const blobReg = /^blob:/i;
                     if (!blobReg.test(video.currentSrc) && !blobReg.test(video.src)) {
                         addPopupWithControls(video);
                     }
                 }
 
-                if (!excludedInlineClasses.some((className) => video.closest(`.${className}`))) {
-                    addPlaysInline(video);
+                if (!exclusionClasses.inline.some((className) => video.closest(`.${className}`))) {
+                    if (!video.hasAttribute('playsinline')) {
+                        video.setAttribute('playsinline', 'true');
+                        video.setAttribute('webkit-playsinline', 'true');
+                    }
                 }
 
-                if (!excludedPlayPauseClasses.some((className) => video.closest(`.${className}`))) {
-                    addVisibilityPlayPause(video);
+                if (!exclusionClasses.playPause.some((className) => video.closest(`.${className}`))) {
+                    new VisibilityHandler(video);
                 }
             }
         });
@@ -223,9 +250,5 @@
 
     processVideos();
 
-    const mutationObserver = new MutationObserver(() => {
-        processVideos();
-    });
-
-    mutationObserver.observe(document.body, { childList: true, subtree: true });
+    new MutationHandler(processVideos);
 })();
