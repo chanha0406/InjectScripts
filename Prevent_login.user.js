@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         Prevent login script
-// @version      1.8
-// @description  Remove login and logo + etc
+// @name         Inline comment
+// @version      1.9
+// @description  Inline comment image, video + Add button in video.
 // @match        https://m.fmkorea.com/*
 // @match        https://www.fmkorea.com/*
 // @grant        none
@@ -67,28 +67,36 @@
                             });
                         }
 
-                        // 열기 버튼 추가
+                        // PIP 버튼 추가
                         if (videoUrl) {
-                            // 열기 버튼 만들기
-                            const openButton = document.createElement('button');
-                            openButton.textContent = '🌐';
-                            openButton.classList.add('mejs__button', 'mejs__open-file');
-                            openButton.style.cursor = 'pointer';
-                            openButton.style.backgroundColor = 'transparent';  // 배경 투명
-                            openButton.style.border = 'none';  // 테두리 제거
-                            openButton.style.fontSize = '16px';  // 폰트 크기 조정
-                            openButton.style.textAlign = 'center';  // 텍스트 정렬
-                            openButton.style.padding = '0px'; 
+                            // PIP 버튼 만들기
+                            const pipButton = document.createElement('button');
+                            pipButton.textContent = '🖼️';
+                            pipButton.classList.add('mejs__button', 'mejs__open-file');
+                            pipButton.style.cursor = 'pointer';
+                            pipButton.style.backgroundColor = 'transparent';  // 배경 투명
+                            pipButton.style.border = 'none';  // 테두리 제거
+                            pipButton.style.fontSize = '16px';  // 폰트 크기 조정
+                            pipButton.style.textAlign = 'center';  // 텍스트 정렬
+                            pipButton.style.padding = '0px'; 
                             
-
-                            openButton.addEventListener('click', function (event) {
+                            let isPIP = false;
+                            pipButton.addEventListener('click', function (event) {
                                 event.preventDefault();
-                                videoElement.requestPictureInPicture();
+                                if (!isPIP) {
+                                    videoElement.requestPictureInPicture();
+                                    videoElement.play();
+                                    isPIP = true;
+                                }
+                                else {
+                                    document.exitPictureInPicture();
+                                    isPIP = false;
+                                }
                             });
 
-                            // 다운로드 버튼 옆에 열기 버튼 추가
+                            // 다운로드 버튼 옆에 PIP 버튼 추가
                             if (cloneButton) {
-                                cloneButton.parentNode.insertBefore(openButton, cloneButton.nextSibling);
+                                cloneButton.parentNode.insertBefore(pipButton, cloneButton.nextSibling);
                             }
 
                             const copyButton = document.createElement('button');
@@ -111,7 +119,7 @@
                                 }
                             };
 
-                            // 다운로드 버튼 옆에 열기 버튼 추가
+                            // 다운로드 버튼 옆에 PIP 버튼 추가
                             if (cloneButton) {
                                 cloneButton.parentNode.insertBefore(copyButton, cloneButton.nextSibling);
                             }
@@ -181,26 +189,6 @@
                     });
                 });
 
-                // .bd_login 클래스 처리
-                document.querySelectorAll('.bd_login').forEach((element) => {
-                    let shouldReplace = false;
-
-                    if (element.hasAttribute('onclick')) {
-                        element.removeAttribute('onclick');
-                        shouldReplace = true;
-                    }
-
-                    if (element.hasAttribute('href')) {
-                        element.removeAttribute('href');
-                        shouldReplace = true;
-                    }
-
-                    if (shouldReplace) {
-                        element.replaceWith(element.cloneNode(true));
-                        //console.log("bd_login 속성 제거 및 노드 교체");
-                    }
-                });
-
                 // '포텐' 텍스트 변경
                 document.querySelectorAll('*').forEach((element) => {
                     element.childNodes.forEach((node) => {
@@ -213,26 +201,6 @@
 
                 console.log("노드 및 속성 수정 완료");
             }
-
-            // 속성(attribute) 변경 처리
-            if (mutation.type === 'attributes' && mutation.target.classList.contains('bd_login')) {
-                let shouldReplace = false;
-
-                if (mutation.target.hasAttribute('onclick')) {
-                    mutation.target.removeAttribute('onclick');
-                    shouldReplace = true;
-                }
-
-                if (mutation.target.hasAttribute('href')) {
-                    mutation.target.removeAttribute('href');
-                    shouldReplace = true;
-                }
-
-                if (shouldReplace) {
-                    mutation.target.replaceWith(mutation.target.cloneNode(true));
-                    //console.log("bd_login 속성 제거 및 노드 교체");
-                }
-            }
         });
     });
 
@@ -240,7 +208,6 @@
     observer.observe(document.body, {
         childList: true, // 자식 노드 추가/삭제 감지
         subtree: true,   // 하위 노드 감지
-        attributes: true, // 속성 변경 감지
     });
 })();
 
