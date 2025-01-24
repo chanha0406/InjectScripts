@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Inline comment
-// @version      2.4
+// @version      2.5
 // @description  Inline comment image, video + Add button in video.
 // @match        https://m.fmkorea.com/*
 // @match        https://www.fmkorea.com/*
@@ -61,6 +61,8 @@
 
             if (downloadButton && !downloadButton.classList.contains('downloading')) {
                 const cloneButton = prepareDownloadButton(downloadButton, videoUrl);
+                container.querySelector('.mejs__button.mejs__volume-button')?.remove();
+                container.querySelector('.mejs__button.mejs__playpause-button')?.remove();
                 addPipButton(cloneButton, videoElement);
                 addCopyButton(cloneButton, videoUrl);
             }
