@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Auto Blob Download for Specific URLs
 // @namespace    http://tampermonkey.net/
-// @version      2.3
+// @version      2.4
 // @description  Automatically download video files with Blob when the URL contains specific extensions and the 'download' query.
 // @match        *://*/*
 // @grant        none
@@ -15,72 +15,83 @@
 
     const videoExtensions = /\.(mp4|webm|ogg)$/i; // Supported video extensions
 
-    // Function to automatically download Blob if URL matches criteria
-    const checkAndDownloadBlob = () => {
-        const url = new URL(window.location.href); // Use URL object for easier parsing
-        const pathname = url.pathname; // Get the path excluding query
-        const searchParams = url.searchParams; // Get query parameters
+    /**
+     * Adjust video element to fit the screen.
+     * @param {HTMLVideoElement} video - Video element to adjust.
+     */
+    const adjustVideoToScreen = (video) => {
+        video.classList.remove('media-document', 'iPhone', 'video');
+        video.style.width = '100%';
+        video.style.height = '100%';
+        video.style.objectFit = 'contain';
+    };
 
-        // Check if the path contains a video extension and 'download' exists in query parameters
-        if (videoExtensions.test(pathname)) {
-            function fitVideoToScreen(video) {
-                video.classList.remove('media-document', 'iPhone', 'video');
-                video.style.width = '100%';         // 화면의 너비에 맞게
-                video.style.height = '100%';        // 화면의 높이에 맞게
-                video.style.objectFit = 'contain';  // 비율을 유지하면서 화면에 맞도록 조정, 자르지 않음
-            }
-
-            // 페이지에서 이미 로드된 video 요소들에서 클래스를 제거
-            const initialVideos = document.querySelectorAll('video');
-            initialVideos.forEach(fitVideoToScreen);
-
-            // MutationObserver로 새로운 video 요소가 추가되었을 때 클래스 제거
-            const observer = new MutationObserver((mutations) => {
-                mutations.forEach((mutation) => {
-                    // 새로 추가된 video 요소들에 대해
-                    mutation.addedNodes.forEach((node) => {
-                        if (node.tagName === 'VIDEO') {
-                            fitVideoToScreen(node);
-                        }
-                    });
+    /**
+     * Observe and adjust new video elements added to the page.
+     */
+    const observeNewVideos = () => {
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                mutation.addedNodes.forEach((node) => {
+                    if (node.tagName === 'VIDEO') {
+                        adjustVideoToScreen(node);
+                    }
                 });
             });
+        });
 
-            // MutationObserver 설정
-            observer.observe(document.body, {
-                childList: true,  // 자식 노드가 추가되거나 삭제될 때
-                subtree: true,    // 하위 요소도 감시
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+        });
+    };
+
+    /**
+     * Download the Blob content of the video file.
+     * @param {string} url - The URL to fetch the video.
+     * @param {string} fileName - The file name to save.
+     */
+    const downloadBlob = (url, fileName) => {
+        fetch(url)
+            .then((response) => {
+                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                return response.blob();
+            })
+            .then((blob) => {
+                const blobURL = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = blobURL;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(blobURL);
+            })
+            .catch((error) => {
+                console.error('Blob Download failed:', error);
+                alert(`Failed to download video: ${error.message}`);
             });
+    };
+
+    /**
+     * Check the current URL and trigger actions if conditions are met.
+     */
+    const processCurrentURL = () => {
+        const url = new URL(window.location.href);
+        const pathname = url.pathname;
+        const searchParams = url.searchParams;
+
+        if (videoExtensions.test(pathname)) {
+            document.querySelectorAll('video').forEach(adjustVideoToScreen);
+            observeNewVideos();
 
             if (searchParams.has('download')) {
-                const fileName = pathname.split('/').pop(); // Extract file name from path
-
-                console.log(fileName);
-
-                fetch(url.href)
-                    .then((response) => {
-                        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-                        return response.blob();
-                    })
-                    .then((blob) => {
-                        const blobURL = URL.createObjectURL(blob);
-                        const link = document.createElement('a');
-                        link.href = blobURL;
-                        link.download = fileName;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                        URL.revokeObjectURL(blobURL); // Revoke Blob URL
-                    })
-                    .catch((error) => {
-                        console.error('Blob Download failed:', error);
-                        alert(`Failed to download video: ${error.message}`);
-                    });
+                const fileName = pathname.split('/').pop();
+                downloadBlob(url.href, fileName);
             }
         }
     };
 
-    // Execute the function on script load
-    checkAndDownloadBlob();
-
+    // Execute the main function on script load
+    processCurrentURL();
 })();
