@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Inline comment
-// @version      2.2
+// @version      2.3
 // @description  Inline comment image, video + Add button in video.
 // @match        https://m.fmkorea.com/*
 // @match        https://www.fmkorea.com/*
@@ -60,9 +60,9 @@
             const downloadButton = container.querySelector('.mejs__button.mejs__download-file');
 
             if (downloadButton && !downloadButton.classList.contains('downloading')) {
-                prepareDownloadButton(downloadButton, videoUrl);
-                addPipButton(container, videoElement);
-                addCopyButton(container, videoUrl);
+                const cloneButton = prepareDownloadButton(downloadButton, videoUrl);
+                addPipButton(cloneButton, videoElement);
+                addCopyButton(cloneButton, videoUrl);
             }
         });
     }
@@ -78,6 +78,8 @@
         if (cloneButton && videoUrl) {
             attachDownloadEvent(cloneButton, videoUrl);
         }
+
+        return cloneButton;
     }
 
     function attachDownloadEvent(button, videoUrl) {
@@ -102,7 +104,7 @@
             .catch(error => console.error('Download failed:', error));
     }
 
-    function addPipButton(container, videoElement) {
+    function addPipButton(downloadButton, videoElement) {
         if (!videoElement) return;
 
         const pipButton = createButton('🖼️');
@@ -120,9 +122,10 @@
         });
 
         container.appendChild(pipButton);
+        downloadButton.parentNode.insertBefore(pipButton, downloadButton.nextSibling);
     }
 
-    function addCopyButton(container, videoUrl) {
+    function addCopyButton(downloadButton, videoUrl) {
         if (!videoUrl) return;
 
         const copyButton = createButton('🔗');
@@ -138,6 +141,8 @@
         };
 
         container.appendChild(copyButton);
+        downloadButton.parentNode.insertBefore(copyButton, downloadButton.nextSibling);
+
     }
 
     /**
