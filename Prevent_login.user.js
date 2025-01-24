@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Inline comment
-// @version      2.3
+// @version      2.4
 // @description  Inline comment image, video + Add button in video.
 // @match        https://m.fmkorea.com/*
 // @match        https://www.fmkorea.com/*
@@ -121,7 +121,6 @@
             }
         });
 
-        container.appendChild(pipButton);
         downloadButton.parentNode.insertBefore(pipButton, downloadButton.nextSibling);
     }
 
@@ -140,7 +139,6 @@
             }
         };
 
-        container.appendChild(copyButton);
         downloadButton.parentNode.insertBefore(copyButton, downloadButton.nextSibling);
 
     }
