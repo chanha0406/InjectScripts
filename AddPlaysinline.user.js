@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Add playsinline, Auto Play/Pause, Toggle Controls, and Popup Menu with Blob Download (Vanilla JS Version)
 // @namespace    http://tampermonkey.net/
-// @version      5.4
+// @version      5.5
 // @description  Add playsinline to all videos, control play/pause based on visibility, toggle controls, and show a popup menu synchronized with the video controller and improved Blob Download.
 // @match        *://*/*
 // @updateURL    https://raw.githubusercontent.com/chanha0406/InjectScripts/master/AddPlaysinline.user.js
@@ -11,7 +11,7 @@
 // @exclude      *://cloud.*/*
 // @exclude      *://*file.*/*
 // @run-at       document-end
-// ==/UserScript==
+// ==/UserScript===
 
 (function () {
     'use strict';
@@ -131,9 +131,7 @@
             document.body.appendChild(popup);
 
             video.addEventListener('mouseenter', updatePopupPosition);
-            video.addEventListener('mouseleave', () => {
-                hidePopup();
-            });
+            video.addEventListener('mouseleave', hidePopup);
         } else {
             popup = document.getElementById(popupId);
         }
@@ -141,20 +139,44 @@
         return popup;
     };
 
+    const setupAutoPlayPause = (video) => {
+        if (!exclusionClasses.playPause.some(className => video.closest(`.${className}`))) {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        entry.target.play();
+                    } else {
+                        entry.target.pause();
+                    }
+                });
+            }, { threshold: 0.5 }); // 50% 이상 보일 때 재생
+
+            observer.observe(video);
+        }
+    };
+
     const processVideos = () => {
         document.querySelectorAll('video').forEach((video) => {
-            if (!video.dataset.popupId) {
-                if (!exclusionClasses.popup.some((className) => video.closest(`.${className}`))) {
-                    createPopupMenu(video);
-                }
+            if (video.dataset.processed) return;
 
-                if (!exclusionClasses.inline.some((className) => video.closest(`.${className}`))) {
-                    if (!video.hasAttribute('playsinline')) {
-                        video.setAttribute('playsinline', 'true');
-                        video.setAttribute('webkit-playsinline', 'true');
-                    }
+            // 팝업 메뉴 추가 (popup 제외 클래스 적용)
+            if (!exclusionClasses.popup.some(className => video.closest(`.${className}`))) {
+                createPopupMenu(video);
+            }
+
+            // playsinline 속성 적용 (inline 제외 클래스 적용)
+            if (!exclusionClasses.inline.some(className => video.closest(`.${className}`))) {
+                if (!video.hasAttribute('playsinline')) {
+                    video.setAttribute('playsinline', 'true');
+                    video.setAttribute('webkit-playsinline', 'true');
                 }
             }
+
+            // 자동 재생 및 정지 기능 적용
+            setupAutoPlayPause(video);
+
+            // 중복 적용 방지 플래그 추가
+            video.dataset.processed = "true";
         });
     };
 
