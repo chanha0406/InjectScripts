@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Add playsinline, Auto Play/Pause, Toggle Controls, and Popup Menu with Blob Download (Vanilla JS Version)
 // @namespace    http://tampermonkey.net/
-// @version      5.5
+// @version      5.6
 // @description  Add playsinline to all videos, control play/pause based on visibility, toggle controls, and show a popup menu synchronized with the video controller and improved Blob Download.
 // @match        *://*/*
 // @updateURL    https://raw.githubusercontent.com/chanha0406/InjectScripts/master/AddPlaysinline.user.js
@@ -11,7 +11,7 @@
 // @exclude      *://cloud.*/*
 // @exclude      *://*file.*/*
 // @run-at       document-end
-// ==/UserScript===
+// ==/UserScript==
 
 (function () {
     'use strict';
@@ -139,21 +139,30 @@
         return popup;
     };
 
-    const setupAutoPlayPause = (video) => {
-        if (!exclusionClasses.playPause.some(className => video.closest(`.${className}`))) {
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach((entry) => {
-                    if (entry.isIntersecting) {
-                        entry.target.play();
-                    } else {
-                        entry.target.pause();
-                    }
-                });
-            }, { threshold: 0.5 }); // 50% 이상 보일 때 재생
+const setupAutoPlayPause = (video) => {
+    if (!exclusionClasses.playPause.some(className => video.closest(`.${className}`))) {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    video.play();
+                    video.controls = false; // 🎯 자동 재생 시 컨트롤 숨김
+                } else {
+                    video.pause();
+                    video.controls = true; // 🎯 정지 시 컨트롤 다시 표시
+                }
+            });
+        }, { threshold: 0.5 });
 
-            observer.observe(video);
-        }
-    };
+        observer.observe(video);
+
+        // 🎯 마우스를 올리거나 터치하면 컨트롤 다시 표시
+        video.addEventListener('mouseenter', () => video.controls = true);
+        video.addEventListener('mouseleave', () => {
+            if (!video.paused) video.controls = false; // 재생 중일 때만 숨김
+        });
+        video.addEventListener('touchstart', () => video.controls = true);
+    }
+};
 
     const processVideos = () => {
         document.querySelectorAll('video').forEach((video) => {
