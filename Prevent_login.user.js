@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Inline comment
-// @version      2.5
+// @version      2.6
 // @description  Inline comment image, video + Add button in video.
 // @match        https://m.fmkorea.com/*
 // @match        https://www.fmkorea.com/*
@@ -31,7 +31,7 @@
 
     const CONFIG = {
         UNWANTED_SELECTORS: ['.level', '.fm_vote', '.logo', '.hd>.h1'],
-        TEXT_REPLACEMENT_TARGET: ['p', 'span', 'div'] // Elements likely to contain text for replacement
+        TEXT_REPLACEMENT_TARGET: ['p', 'span', 'div', 'a'] // Elements likely to contain text for replacement
     };
 
     /**
@@ -231,4 +231,5 @@
 
         return button;
     }
+    
 })();
